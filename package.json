@@ -1,0 +1,29 @@
+{
+  "name": "hop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "wrangler types --strict-vars=false && tsc --noEmit",
+    "test": "npm run check:boundaries && vitest run",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "cf-typegen": "wrangler types --strict-vars=false"
+  },
+  "dependencies": {
+    "hono": "^4.13.9",
+    "jose": "^6.2.12",
+    "ua-parser-js": "^1.0.41"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@types/ua-parser-js": "^0.7.39",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.142.0"
+  },
+  "allowScripts": {
+    "workerd@1.20260815.1": true,
+    "workerd@1.20260926.1": true,
+    "esbuild@0.28.1": true
+  }
+}
