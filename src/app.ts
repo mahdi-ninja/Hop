@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { AppEnv } from './core/services';
+import { notFoundPage, redirectRoutes } from './routes/redirect';
 
 export function createApp(): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
@@ -11,6 +12,8 @@ export function createApp(): Hono<AppEnv> {
   });
 
   app.get('/health', (c) => c.text('ok'));
+  app.route('/', redirectRoutes());
+  app.notFound(notFoundPage);
 
   return app;
 }

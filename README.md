@@ -12,6 +12,7 @@ Requires Node.js LTS.
 ```sh
 npm install
 cp .dev.vars.example .dev.vars   # sets DEV_AUTH_EMAIL for the localhost-only auth bypass
+npm run db:migrate:local         # create the local D1 schema
 npm run dev                      # http://localhost:8787
 ```
 
@@ -25,4 +26,7 @@ under `wrangler dev` (otherwise wrangler rewrites it to the production route).
 | `npm run dev` | Local Worker via `wrangler dev` |
 | `npm run typecheck` | Regenerates `worker-configuration.d.ts` and runs `tsc` |
 | `npm test` | Portability boundary check, then Vitest in the Workers runtime |
+| `npm run db:migrate:local` | Apply migrations to the local D1 database |
+| `npm run db:migrate:remote` | Apply migrations to the production D1 database |
+| `npm run cf-typegen` | Regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc` |
 | `npm run check:boundaries` | Fails if Cloudflare-specific APIs leak outside `src/worker.ts` / `src/adapters/` |

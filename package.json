@@ -4,10 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "typecheck": "wrangler types --strict-vars=false && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "npm run check:boundaries && vitest run",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "cf-typegen": "wrangler types --strict-vars=false"
+    "cf-typegen": "wrangler types --strict-vars=false",
+    "db:migrate:local": "wrangler d1 migrations apply hop --local",
+    "db:migrate:remote": "wrangler d1 migrations apply hop --remote"
   },
   "dependencies": {
     "hono": "^4.13.9",

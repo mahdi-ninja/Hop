@@ -1,5 +1,6 @@
 import { createApp } from './app';
 import { CloudflareGeoLookup } from './adapters/cloudflare/geo';
+import { D1LinkStore } from './adapters/d1/linkStore';
 import type { Services } from './core/ports';
 
 interface WorkerEnv extends Env {
@@ -15,14 +16,7 @@ function notImplemented(): never {
 
 function buildServices(env: WorkerEnv, ctx: ExecutionContext): Services {
   return {
-    links: {
-      getBySlug: notImplemented,
-      list: notImplemented,
-      create: notImplemented,
-      update: notImplemented,
-      delete: notImplemented,
-      setTitleIfEmpty: notImplemented,
-    },
+    links: new D1LinkStore(env.DB),
     visits: {
       record: notImplemented,
       linkStats: notImplemented,
