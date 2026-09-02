@@ -62,6 +62,66 @@ describe('GET /:slug', () => {
   });
 });
 
+describe('visit logging', () => {
+  const browser = { 'User-Agent': 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/128.0 Safari/537.36' };
+
+  it('records one visit per GET, after responding', async () => {
+    const { request, services } = await setup();
+    await request('/docs', { headers: { ...browser, Referer: 'https://www.twitter.com/x' } });
+    await services.settle();
+    expect(services.visits.visits).toHaveLength(1);
+    expect(services.visits.visits[0]).toMatchObject({ slug: 'docs', referrerHost: 'twitter.com', isBot: false });
+    expect(services.links.links.get('docs')?.visitCount).toBe(1);
+  });
+
+  it('does not record HEAD requests', async () => {
+    const { request, services } = await setup();
+    await request('/docs', { method: 'HEAD', headers: browser });
+    await services.settle();
+    expect(services.visits.visits).toHaveLength(0);
+  });
+
+  it('does not record unknown slugs', async () => {
+    const { request, services } = await setup();
+    await request('/nope', { headers: browser });
+    await services.settle();
+    expect(services.visits.visits).toHaveLength(0);
+  });
+
+  it('flags bots without bumping the visit count', async () => {
+    const { request, services } = await setup();
+    await request('/docs', { headers: { 'User-Agent': 'Slackbot-LinkExpanding 1.0' } });
+    await services.settle();
+    expect(services.visits.visits[0]?.isBot).toBe(true);
+    expect(services.links.links.get('docs')?.visitCount).toBe(0);
+  });
+
+  it('still redirects when recording fails', async () => {
+    const { request, services } = await setup();
+    services.visits.record = async () => {
+      throw new Error('D1 is down');
+    };
+    const res = await request('/docs', { headers: browser });
+    expect(res.status).toBe(302);
+    await services.settle();
+  });
+
+  it('still redirects when geo lookup fails', async () => {
+    const services = createFakeServices({
+      geo: {
+        lookup: async () => {
+          throw new Error('no geo');
+        },
+      },
+    });
+    await services.links.create({ slug: 'docs', url: 'https://example.com/', title: null, by: 'a@b.c' });
+    const res = await app.request('https://go.example.com/docs', { headers: browser }, { services });
+    expect(res.status).toBe(302);
+    await services.settle();
+    expect(services.visits.visits).toHaveLength(0);
+  });
+});
+
 describe('GET /', () => {
   it('redirects to /admin by default', async () => {
     const { request } = await setup();

@@ -1,31 +1,23 @@
 import type { Services } from '../../src/core/ports';
 import { FakeLinkStore } from './linkStore';
+import { FakeVisitStore } from './visitStore';
 
 export interface FakeServices extends Services {
   links: FakeLinkStore;
-  deferred: Promise<unknown>[];
+  visits: FakeVisitStore;
   settle(): Promise<void>;
 }
 
-function notImplemented(): never {
-  throw new Error('Not implemented in fake');
-}
-
-export function createFakeServices(overrides: Partial<Services> = {}): FakeServices {
+export function createFakeServices(overrides: Partial<Omit<Services, 'links' | 'visits'>> = {}): FakeServices {
   const deferred: Promise<unknown>[] = [];
-  const services: FakeServices = {
-    links: new FakeLinkStore(),
-    visits: {
-      record: notImplemented,
-      linkStats: notImplemented,
-      recentVisits: notImplemented,
-      overview: notImplemented,
-    },
+  const links = new FakeLinkStore();
+  return {
+    links,
+    visits: new FakeVisitStore(links),
     geo: { lookup: async () => ({ country: null, region: null, city: null }) },
     identity: { identify: async () => null },
     assets: { fetch: async () => new Response('asset', { status: 200 }) },
     config: { shortDomain: 'go.example.com', rootRedirectUrl: null },
-    deferred,
     defer: (p) => {
       deferred.push(p);
     },
@@ -33,6 +25,5 @@ export function createFakeServices(overrides: Partial<Services> = {}): FakeServi
       await Promise.allSettled(deferred);
     },
     ...overrides,
-  } as FakeServices;
-  return services;
+  };
 }

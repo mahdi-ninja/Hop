@@ -1,6 +1,7 @@
 import { createApp } from './app';
 import { CloudflareGeoLookup } from './adapters/cloudflare/geo';
 import { D1LinkStore } from './adapters/d1/linkStore';
+import { D1VisitStore } from './adapters/d1/visitStore';
 import type { Services } from './core/ports';
 
 interface WorkerEnv extends Env {
@@ -10,19 +11,10 @@ interface WorkerEnv extends Env {
 const app = createApp();
 const geo = new CloudflareGeoLookup();
 
-function notImplemented(): never {
-  throw new Error('Not implemented yet');
-}
-
 function buildServices(env: WorkerEnv, ctx: ExecutionContext): Services {
   return {
     links: new D1LinkStore(env.DB),
-    visits: {
-      record: notImplemented,
-      linkStats: notImplemented,
-      recentVisits: notImplemented,
-      overview: notImplemented,
-    },
+    visits: new D1VisitStore(env.DB),
     geo,
     identity: { identify: async () => null },
     defer: (p) => ctx.waitUntil(p),

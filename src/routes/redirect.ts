@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../core/services';
 import { isValidSlugFormat } from '../lib/slug';
 import { mergeQuery } from '../lib/url';
+import { recordVisit } from '../lib/visit';
 import { NOT_FOUND_HTML } from '../pages/notFound';
 
 export function notFoundPage(c: Context<AppEnv>): Response {
@@ -25,8 +26,11 @@ export function redirectRoutes(): Hono<AppEnv> {
     const slug = c.req.param('slug');
     if (!isValidSlugFormat(slug)) return notFoundPage(c);
 
-    const link = await c.get('services').links.getBySlug(slug);
+    const services = c.get('services');
+    const link = await services.links.getBySlug(slug);
     if (!link) return notFoundPage(c);
+
+    if (c.req.method === 'GET') services.defer(recordVisit(c.req.raw, slug, services));
 
     return redirectTo(mergeQuery(link.url, new URL(c.req.url).searchParams));
   });
