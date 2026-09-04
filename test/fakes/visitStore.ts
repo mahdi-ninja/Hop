@@ -3,9 +3,13 @@ import type { LinkStats, NewVisit, Overview, Visit } from '../../src/core/types'
 import type { FakeLinkStore } from './linkStore';
 
 export class FakeVisitStore implements VisitStore {
-  readonly visits: NewVisit[] = [];
+  visits: NewVisit[] = [];
 
-  constructor(private readonly links: FakeLinkStore) {}
+  constructor(private readonly links: FakeLinkStore) {
+    links.onDelete = (slug) => {
+      this.visits = this.visits.filter((v) => v.slug !== slug);
+    };
+  }
 
   async record(visit: NewVisit): Promise<void> {
     this.visits.push(visit);
