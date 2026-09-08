@@ -3,13 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "typecheck": "tsc --noEmit",
+    "dev": "npm run build:dashboard && wrangler dev",
+    "dev:dashboard": "npm --workspace dashboard run dev",
+    "build:dashboard": "npm --workspace dashboard run build",
+    "typecheck": "tsc --noEmit && npm --workspace dashboard run typecheck",
     "test": "npm run check:boundaries && vitest run",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "cf-typegen": "wrangler types --strict-vars=false",
     "db:migrate:local": "wrangler d1 migrations apply hop --local",
-    "db:migrate:remote": "wrangler d1 migrations apply hop --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply hop --remote",
+    "deploy": "npm run build:dashboard && wrangler deploy",
+    "cf-typegen": "wrangler types --strict-vars=false"
   },
   "dependencies": {
     "hono": "^4.13.9",
@@ -26,6 +29,10 @@
   "allowScripts": {
     "workerd@1.20260815.1": true,
     "workerd@1.20260926.1": true,
-    "esbuild@0.28.1": true
-  }
+    "esbuild@0.28.1": true,
+    "fsevents": false
+  },
+  "workspaces": [
+    "dashboard"
+  ]
 }
