@@ -30,6 +30,7 @@ under `wrangler dev` (otherwise wrangler rewrites it to the production route).
 | `npm run typecheck` | `tsc` for the Worker and the dashboard |
 | `npm test` | Portability boundary check, then Vitest in the Workers runtime |
 | `npm run db:migrate:local` | Apply migrations to the local D1 database |
+| `npm run db:seed:local` | Replace local data with ~10 demo links and a few thousand visits |
 | `npm run db:migrate:remote` | Apply migrations to the production D1 database |
 | `npm run cf-typegen` | Regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc` |
 | `npm run check:boundaries` | Fails if Cloudflare-specific APIs leak outside `src/worker.ts` / `src/adapters/` |

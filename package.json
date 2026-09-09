@@ -11,6 +11,7 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "db:migrate:local": "wrangler d1 migrations apply hop --local",
     "db:migrate:remote": "wrangler d1 migrations apply hop --remote",
+    "db:seed:local": "node scripts/seed-local.mjs",
     "deploy": "npm run build:dashboard && wrangler deploy",
     "cf-typegen": "wrangler types --strict-vars=false"
   },
