@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { api } from '../api/client';
 import type { RangeName } from '../api/types';
 import { StatsControls, StatTile, VisitsChart, rangeLabel } from '../components/stats';
-import { Card, EmptyState, ErrorBanner, Spinner } from '../components/ui';
+import { Card, CopyButton, EmptyState, ErrorBanner, Spinner } from '../components/ui';
 import { fillDays } from '../lib/days';
 import { formatNumber } from '../lib/format';
 import { useApi } from '../lib/useApi';
@@ -59,7 +59,11 @@ export function OverviewPage() {
                               <div className="truncate text-slate-500 dark:text-slate-400">{link.title}</div>
                             )}
                           </div>
-                          <span className="shrink-0 tabular-nums">{formatNumber(link.visits)} visits</span>
+                          <div className="flex shrink-0 items-center gap-3">
+                            <span className="tabular-nums">{formatNumber(link.visits)} visits</span>
+                            {/* The dashboard is served from the short domain, so its origin is the short-link origin. */}
+                            <CopyButton text={`${window.location.origin}/${link.slug}`} />
+                          </div>
                         </li>
                       ))}
                     </ol>

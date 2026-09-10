@@ -42,6 +42,7 @@ describe('GET /:slug', () => {
     const res = await request('/nope');
     expect(res.status).toBe(404);
     expect(res.headers.get('Content-Type')).toMatch(/text\/html/);
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store');
     expect(await res.text()).toContain('Link not found');
   });
 

@@ -70,6 +70,10 @@ async function findLink(c: ApiContext): Promise<Link | null> {
 export function apiRoutes(): Hono<AppEnv> {
   const api = new Hono<AppEnv>();
 
+  api.use(async (c, next) => {
+    await next();
+    c.header('Cache-Control', 'private, no-store');
+  });
   api.use(requireIdentity('api'));
 
   api.get('/me', (c) => c.json({ email: c.get('userEmail') }));

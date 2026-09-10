@@ -5,8 +5,9 @@ import { mergeQuery } from '../lib/url';
 import { recordVisit } from '../lib/visit';
 import { NOT_FOUND_HTML } from '../pages/notFound';
 
+// no-store so a slug that 404s now redirects as soon as someone creates it.
 export function notFoundPage(c: Context<AppEnv>): Response {
-  return c.html(NOT_FOUND_HTML, 404);
+  return c.html(NOT_FOUND_HTML, 404, { 'Cache-Control': 'private, no-store' });
 }
 
 function redirectTo(location: string): Response {

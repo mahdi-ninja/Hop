@@ -20,6 +20,7 @@ describe('requireIdentity', () => {
   it('returns 401 JSON without an identity', async () => {
     const res = await request('/api/me');
     expect(res.status).toBe(401);
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store');
     expect(await res.json()).toEqual({ error: { code: 'UNAUTHORIZED', message: expect.any(String) } });
   });
 
@@ -36,6 +37,7 @@ describe('requireIdentity', () => {
     const res = await request('/api/me', { headers: authed() });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ email: 'alice@example.com' });
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store');
   });
 
   it('returns JSON 404 for unknown API routes when authenticated', async () => {

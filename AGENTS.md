@@ -40,10 +40,12 @@ short links. Access control is handled by Cloudflare Access — Hop has no login
 - Keep `README.md` at the repo root up to date with setup and commands as you go.
 
 ## Commands (keep this section accurate as the project evolves)
-- `npm install` — install root + dashboard deps
+- `npm install` — install root + dashboard deps (npm workspace)
 - `npm run dev` — local Worker with local D1, dashboard built into assets
 - `npm run dev:dashboard` — Vite dev server for dashboard work (proxies /api to the Worker)
 - `npm run typecheck`
-- `npm test`
+- `npm test` — boundary check, then Vitest in the Workers pool
+- `npm run check:boundaries`
 - `npm run db:migrate:local` / `npm run db:migrate:remote`
+- `npm run db:seed:local` — demo links and visits in local D1
 - `npm run deploy` — builds dashboard, then `wrangler deploy`
