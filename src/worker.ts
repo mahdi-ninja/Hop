@@ -6,7 +6,8 @@ import { D1VisitStore } from './adapters/d1/visitStore';
 import { DevIdentityProvider } from './adapters/dev/devIdentity';
 import type { Services } from './core/ports';
 
-interface WorkerEnv extends Env {
+// Omit keeps this valid whether or not `wrangler types` picked DEV_AUTH_EMAIL up from a local .dev.vars.
+interface WorkerEnv extends Omit<Env, 'DEV_AUTH_EMAIL'> {
   DEV_AUTH_EMAIL?: string;
 }
 
