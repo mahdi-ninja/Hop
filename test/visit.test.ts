@@ -88,6 +88,8 @@ describe('buildVisit', () => {
     const device = async (ua: string) =>
       (await buildVisit(new Request('https://x/', { headers: { 'User-Agent': ua } }), 's', { geo })).device;
     expect(await device(UA.chromeMac)).toBe('desktop');
+    const mac = await buildVisit(new Request('https://x/', { headers: { 'User-Agent': UA.chromeMac } }), 's', { geo });
+    expect(mac).toMatchObject({ browser: 'Chrome', os: 'macOS' });
     expect(await device(UA.ipad)).toBe('tablet');
     expect(await device(UA.smartTv)).toBe('other');
   });

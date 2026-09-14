@@ -4,97 +4,69 @@ import { api, errorMessage } from '../api/client';
 import type { ApiLink } from '../api/types';
 import { CreateLinkForm } from '../components/CreateLinkForm';
 import { Modal } from '../components/Modal';
-import { Button, CopyButton, EmptyState, ErrorBanner, Spinner, inputClass } from '../components/ui';
-import { displayUrl, formatDate, formatNumber } from '../lib/format';
+import { PlusIcon, SearchIcon } from '../components/icons';
+import { useToast } from '../components/toast';
+import { Button, CopyButton, EmptyState, ErrorBanner, LinkTile, Skeleton } from '../components/ui';
+import { displayUrl, formatNumber, formatShortDate } from '../lib/format';
 import { useDebounced } from '../lib/useApi';
 
-function SlugLink({ link }: { link: ApiLink }) {
+const TITLE_FETCH_GRACE_MS = 60_000;
+
+function LinkCard({ link }: { link: ApiLink }) {
+  const pendingTitle = !link.title && Date.now() - link.createdAt < TITLE_FETCH_GRACE_MS;
   return (
-    <Link
-      to={`/links/${encodeURIComponent(link.slug)}`}
-      className="font-mono font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-    >
-      {link.slug}
-    </Link>
+    <article className="group relative flex min-w-0 items-center gap-3.5 rounded-[18px] bg-surface p-4 shadow-soft transition-shadow hover:shadow-md sm:gap-4 sm:px-5">
+      <LinkTile url={link.url} />
+      <div className="min-w-0 flex-1">
+        <Link
+          to={`/links/${encodeURIComponent(link.slug)}`}
+          className="block truncate font-mono text-[15px] font-medium text-accent-ink after:absolute after:inset-0 after:rounded-[18px] after:content-['']"
+        >
+          <span className="sm:hidden">/{link.slug}</span>
+          <span className="hidden sm:inline">{displayUrl(link.shortUrl)}</span>
+        </Link>
+        <p className={`truncate font-semibold ${link.title ? '' : 'font-medium text-faint'}`}>
+          {link.title ?? (pendingTitle ? 'Fetching title…' : 'No title')}
+        </p>
+        <p className="truncate text-[13px] text-faint">
+          <span title={link.url}>{displayUrl(link.url)}</span> · {formatShortDate(link.createdAt)}
+          {link.createdBy && (
+            <span className="hidden sm:inline" title={`Created by ${link.createdBy}`}>
+              {' '}
+              · {link.createdBy}
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end">
+        <span className="font-display text-[22px] leading-tight font-bold tabular-nums">{formatNumber(link.visitCount)}</span>
+        <span className="text-xs text-faint">{link.visitCount === 1 ? 'visit' : 'visits'}</span>
+      </div>
+      <CopyButton text={link.shortUrl} className="relative z-10" />
+    </article>
   );
 }
 
-function LinksTable({ links }: { links: ApiLink[] }) {
+function LinkCardsSkeleton() {
   return (
-    <div className="hidden overflow-x-auto rounded-lg border border-slate-200 bg-white md:block dark:border-slate-800 dark:bg-slate-900">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-200 text-xs tracking-wide text-slate-500 uppercase dark:border-slate-800 dark:text-slate-400">
-          <tr>
-            <th className="px-3 py-2 font-medium">Short link</th>
-            <th className="px-3 py-2 font-medium">Destination</th>
-            <th className="px-3 py-2 text-right font-medium">Visits</th>
-            <th className="px-3 py-2 font-medium">Created</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-          {links.map((link) => (
-            <tr key={link.slug} className="align-top hover:bg-slate-50 dark:hover:bg-slate-800/50">
-              <td className="px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <SlugLink link={link} />
-                  <CopyButton text={link.shortUrl} />
-                </div>
-                <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{displayUrl(link.shortUrl)}</div>
-              </td>
-              <td className="max-w-md px-3 py-2.5">
-                {link.title && <div className="truncate font-medium">{link.title}</div>}
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="block truncate text-slate-500 hover:underline dark:text-slate-400"
-                  title={link.url}
-                >
-                  {displayUrl(link.url)}
-                </a>
-              </td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{formatNumber(link.visitCount)}</td>
-              <td className="px-3 py-2.5 whitespace-nowrap">
-                <div>{formatDate(link.createdAt)}</div>
-                {link.createdBy && (
-                  <div className="max-w-44 truncate text-xs text-slate-500 dark:text-slate-400" title={link.createdBy}>
-                    {link.createdBy}
-                  </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="grid gap-3.5 lg:grid-cols-2" aria-hidden="true">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="flex items-center gap-4 rounded-[18px] bg-surface p-4 shadow-soft">
+          <Skeleton className="h-11 w-11 rounded-[14px]" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-2/5" />
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="h-3 w-4/5" />
+          </div>
+          <Skeleton className="h-8 w-10" />
+        </div>
+      ))}
     </div>
   );
 }
 
-function LinkCards({ links }: { links: ApiLink[] }) {
-  return (
-    <ul className="space-y-2 md:hidden">
-      {links.map((link) => (
-        <li key={link.slug} className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between gap-2">
-            <SlugLink link={link} />
-            <CopyButton text={link.shortUrl} />
-          </div>
-          {link.title && <div className="mt-1 truncate font-medium">{link.title}</div>}
-          <div className="truncate text-sm text-slate-500 dark:text-slate-400" title={link.url}>
-            {displayUrl(link.url)}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-500 dark:text-slate-400">
-            <span>{formatNumber(link.visitCount)} visits</span>
-            <span>{formatDate(link.createdAt)}</span>
-            {link.createdBy && <span className="truncate">{link.createdBy}</span>}
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export function LinksPage() {
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search.trim(), 250);
   const [links, setLinks] = useState<ApiLink[]>([]);
@@ -103,8 +75,8 @@ export function LinksPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState<ApiLink | null>(null);
   const requestId = useRef(0);
+  const searchInput = useRef<HTMLInputElement>(null);
 
   const loadFirstPage = useCallback(async (searchTerm: string) => {
     const id = ++requestId.current;
@@ -126,6 +98,18 @@ export function LinksPage() {
     void loadFirstPage(debouncedSearch);
   }, [debouncedSearch, loadFirstPage]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(target.tagName) && !creating) {
+        e.preventDefault();
+        searchInput.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [creating]);
+
   const loadMore = async () => {
     if (!nextCursor) return;
     const id = requestId.current;
@@ -136,7 +120,7 @@ export function LinksPage() {
       setLinks((current) => [...current, ...page.items]);
       setNextCursor(page.nextCursor);
     } catch (err) {
-      setError(errorMessage(err));
+      toast(errorMessage(err), 'error');
     } finally {
       setLoadingMore(false);
     }
@@ -146,71 +130,72 @@ export function LinksPage() {
 
   const onCreated = (link: ApiLink) => {
     setCreating(false);
-    setCreated(link);
+    toast(`Created ${displayUrl(link.shortUrl)}`);
     setSearch('');
     if (debouncedSearch) void loadFirstPage('');
     else setLinks((current) => [link, ...current.filter((l) => l.slug !== link.slug)]);
   };
 
+  const shortHost = links[0] ? new URL(links[0].shortUrl).host : window.location.host;
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-2xl font-semibold">Links</h1>
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          + New link
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+        <h1 className="font-display text-[32px] leading-tight font-bold tracking-tight">Your links</h1>
+        {!loading && !debouncedSearch && (
+          <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-[13px] font-semibold text-accent-ink tabular-nums">
+            {links.length}
+            {nextCursor ? '+' : ''}
+          </span>
+        )}
+        <Button variant="primary" size="lg" className="ml-auto" onClick={() => setCreating(true)}>
+          <PlusIcon /> Shorten a link
         </Button>
       </div>
 
-      {created && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
-        >
-          <span>
-            Created <span className="font-mono font-medium">{displayUrl(created.shortUrl)}</span>
-          </span>
-          <CopyButton text={created.shortUrl} />
-          <button
-            type="button"
-            className="ml-auto text-emerald-700 hover:underline dark:text-emerald-300"
-            onClick={() => setCreated(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      <input
-        type="search"
-        placeholder="Search by slug, URL, or title…"
-        aria-label="Search links"
-        className={inputClass}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <label className="flex h-12 items-center gap-3 rounded-full bg-surface px-5 text-faint shadow-soft focus-within:ring-2 focus-within:ring-accent">
+        <SearchIcon />
+        <span className="sr-only">Search links</span>
+        <input
+          ref={searchInput}
+          id="link-search"
+          type="search"
+          placeholder="Find a link by slug, URL or title"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <kbd className="hidden rounded-md bg-sunken px-1.5 py-0.5 font-mono text-xs text-muted sm:block">/</kbd>
+      </label>
 
       {error && <ErrorBanner message={error} onRetry={() => void loadFirstPage(debouncedSearch)} />}
 
       {loading ? (
-        <Spinner />
+        <LinkCardsSkeleton />
       ) : links.length === 0 && !error ? (
         debouncedSearch ? (
-          <EmptyState title="No matching links">Nothing matches “{debouncedSearch}”.</EmptyState>
+          <EmptyState title="No matching links" icon={<SearchIcon size={24} />}>
+            Nothing matches “{debouncedSearch}”. Try part of the slug, the destination, or the title.
+          </EmptyState>
         ) : (
-          <EmptyState title="No links yet">
-            <Button variant="primary" className="mt-3" onClick={() => setCreating(true)}>
-              Create your first link
+          <EmptyState title="No links yet" icon={<PlusIcon size={24} />}>
+            <p>Shorten your first link and share it anywhere.</p>
+            <Button variant="primary" className="mt-4" onClick={() => setCreating(true)}>
+              <PlusIcon /> Shorten a link
             </Button>
           </EmptyState>
         )
       ) : (
         <>
-          <LinksTable links={links} />
-          <LinkCards links={links} />
+          <div className="grid gap-3.5 lg:grid-cols-2">
+            {links.map((link) => (
+              <LinkCard key={link.slug} link={link} />
+            ))}
+          </div>
           {nextCursor && (
-            <div className="flex justify-center">
+            <div className="flex justify-center pt-2">
               <Button onClick={loadMore} disabled={loadingMore}>
-                {loadingMore ? 'Loading…' : 'Load more'}
+                {loadingMore ? 'Loading…' : 'Show more links'}
               </Button>
             </div>
           )}
@@ -218,8 +203,8 @@ export function LinksPage() {
       )}
 
       {creating && (
-        <Modal title="New link" onClose={closeCreate}>
-          <CreateLinkForm onCreated={onCreated} onCancel={closeCreate} />
+        <Modal title="Shorten a link" onClose={closeCreate}>
+          <CreateLinkForm shortHost={shortHost} onCreated={onCreated} onCancel={closeCreate} />
         </Modal>
       )}
     </div>

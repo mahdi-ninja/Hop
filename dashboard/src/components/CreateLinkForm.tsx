@@ -12,7 +12,15 @@ const FIELD_BY_CODE: Record<string, FieldName> = {
   SLUG_TAKEN: 'slug',
 };
 
-export function CreateLinkForm({ onCreated, onCancel }: { onCreated: (link: ApiLink) => void; onCancel: () => void }) {
+export function CreateLinkForm({
+  shortHost,
+  onCreated,
+  onCancel,
+}: {
+  shortHost: string;
+  onCreated: (link: ApiLink) => void;
+  onCancel: () => void;
+}) {
   const [url, setUrl] = useState('');
   const [slug, setSlug] = useState('');
   const [title, setTitle] = useState('');
@@ -41,37 +49,43 @@ export function CreateLinkForm({ onCreated, onCancel }: { onCreated: (link: ApiL
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4" noValidate>
+    <form onSubmit={submit} className="space-y-5" noValidate>
       {formError && <ErrorBanner message={formError} />}
-      <Field label="Destination URL" error={fieldErrors.url}>
+      <Field label="Destination URL" htmlFor="create-url" error={fieldErrors.url}>
         <input
+          id="create-url"
           type="url"
           required
           inputMode="url"
           autoComplete="off"
-          placeholder="https://example.com/some/long/path"
+          placeholder="https://example.com/a/very/long/path"
           className={inputClass}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           aria-invalid={Boolean(fieldErrors.url)}
         />
       </Field>
-      <Field label="Custom slug" hint="optional — random if empty" error={fieldErrors.slug}>
-        <input
-          type="text"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          maxLength={64}
-          placeholder="e.g. launch-2026"
-          className={`${inputClass} font-mono`}
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          aria-invalid={Boolean(fieldErrors.slug)}
-        />
+      <Field label="Custom slug" hint="Optional. Leave empty for a random one." htmlFor="create-slug" error={fieldErrors.slug}>
+        <div className="flex items-center rounded-xl bg-ground ring-1 ring-line ring-inset focus-within:bg-surface focus-within:ring-2 focus-within:ring-accent">
+          <span className="pl-4 font-mono text-sm text-faint">{shortHost}/</span>
+          <input
+            id="create-slug"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            maxLength={64}
+            placeholder="launch-2026"
+            className="h-11 min-w-0 flex-1 bg-transparent pr-4 pl-0.5 font-mono text-[15px] text-ink placeholder:text-faint focus:outline-none"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            aria-invalid={Boolean(fieldErrors.slug)}
+          />
+        </div>
       </Field>
-      <Field label="Title" hint="optional — fetched from the page if empty" error={fieldErrors.title}>
+      <Field label="Title" hint="Optional. We'll fetch it from the page." htmlFor="create-title" error={fieldErrors.title}>
         <input
+          id="create-title"
           type="text"
           maxLength={200}
           className={inputClass}
@@ -79,12 +93,12 @@ export function CreateLinkForm({ onCreated, onCancel }: { onCreated: (link: ApiL
           onChange={(e) => setTitle(e.target.value)}
         />
       </Field>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button onClick={onCancel} disabled={submitting}>
+      <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+        <Button onClick={onCancel} disabled={submitting} variant="ghost">
           Cancel
         </Button>
-        <Button type="submit" variant="primary" disabled={submitting || !url.trim()}>
-          {submitting ? 'Creating…' : 'Create link'}
+        <Button type="submit" variant="primary" size="lg" disabled={submitting || !url.trim()}>
+          {submitting ? 'Shortening…' : 'Shorten link'}
         </Button>
       </div>
     </form>

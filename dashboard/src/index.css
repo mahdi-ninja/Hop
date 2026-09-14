@@ -1,3 +1,135 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-400-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-500-latin.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: light;
+  --hop-ground: #eff4ef;
+  --hop-surface: #ffffff;
+  --hop-sunken: #e6ede7;
+  --hop-ink: #1d2a24;
+  --hop-muted: #56655d;
+  --hop-faint: #7d8a83;
+  --hop-line: #dde6df;
+  --hop-accent: #0f7a61;
+  --hop-accent-hover: #0a5c49;
+  --hop-accent-ink: #0a5c49;
+  --hop-accent-soft: #dff0e8;
+  --hop-accent-fill: #9fd3bd;
+  --hop-on-accent: #ffffff;
+  --hop-hero: #1d2a24;
+  --hop-on-hero: #ffffff;
+  --hop-on-hero-muted: #a9c6b8;
+  --hop-apricot: #e8883a;
+  --hop-apricot-soft: #fde5cf;
+  --hop-danger: #c2392b;
+  --hop-danger-soft: #fbe3df;
+  --hop-shadow: 0 1px 2px rgb(29 42 36 / 0.06), 0 1px 1px rgb(29 42 36 / 0.03);
+}
+
+.dark {
+  color-scheme: dark;
+  --hop-ground: #0f1613;
+  --hop-surface: #17211c;
+  --hop-sunken: #1e2a24;
+  --hop-ink: #e6eee9;
+  --hop-muted: #a3b3aa;
+  --hop-faint: #7f8f86;
+  --hop-line: #26332c;
+  --hop-accent: #36b58e;
+  --hop-accent-hover: #4cc9a2;
+  --hop-accent-ink: #6fd8b5;
+  --hop-accent-soft: #1b3a2f;
+  --hop-accent-fill: #2f7d64;
+  --hop-on-accent: #07140f;
+  --hop-hero: #1f3b30;
+  --hop-on-hero: #f2f7f4;
+  --hop-on-hero-muted: #9cc4b2;
+  --hop-apricot: #f2a15e;
+  --hop-apricot-soft: #3d2a19;
+  --hop-danger: #ef7466;
+  --hop-danger-soft: #3b1e1a;
+  --hop-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+@theme inline {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ground: var(--hop-ground);
+  --color-surface: var(--hop-surface);
+  --color-sunken: var(--hop-sunken);
+  --color-ink: var(--hop-ink);
+  --color-muted: var(--hop-muted);
+  --color-faint: var(--hop-faint);
+  --color-line: var(--hop-line);
+  --color-accent: var(--hop-accent);
+  --color-accent-hover: var(--hop-accent-hover);
+  --color-accent-ink: var(--hop-accent-ink);
+  --color-accent-soft: var(--hop-accent-soft);
+  --color-accent-fill: var(--hop-accent-fill);
+  --color-on-accent: var(--hop-on-accent);
+  --color-hero: var(--hop-hero);
+  --color-on-hero: var(--hop-on-hero);
+  --color-on-hero-muted: var(--hop-on-hero-muted);
+  --color-apricot: var(--hop-apricot);
+  --color-apricot-soft: var(--hop-apricot-soft);
+  --color-danger: var(--hop-danger);
+  --color-danger-soft: var(--hop-danger-soft);
+
+  --shadow-soft: var(--hop-shadow);
+}
+
+@layer base {
+  body {
+    @apply bg-ground font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--hop-accent);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

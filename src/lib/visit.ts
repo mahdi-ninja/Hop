@@ -25,6 +25,9 @@ export function deviceType(parsedType: string | undefined): Device {
   return 'other';
 }
 
+// ua-parser-js v1 reports "Mac OS"; Apple's current name reads better in the stats.
+const OS_NAMES: Record<string, string> = { 'Mac OS': 'macOS' };
+
 export async function buildVisit(
   req: Request,
   slug: string,
@@ -43,7 +46,7 @@ export async function buildVisit(
     referrerHost: referrerHost(req.headers.get('Referer')),
     device: deviceType(ua.device.type),
     browser: ua.browser.name ?? null,
-    os: ua.os.name ?? null,
+    os: ua.os.name ? (OS_NAMES[ua.os.name] ?? ua.os.name) : null,
     isBot: isBotUserAgent(userAgent),
   };
 }

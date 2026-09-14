@@ -63,4 +63,6 @@ npm run deploy
 
 - `compatibility_date` is pinned to the newest date supported by the workerd bundled with
   `@cloudflare/vitest-pool-workers`, so tests and production run the same runtime behaviour.
+- Dashboard fonts (Bricolage Grotesque, DM Sans, DM Mono) are self-hosted from `dashboard/public/fonts`
+  under the SIL Open Font License (licence files alongside), so the admin UI makes no third-party requests.
 - `ua-parser-js` is pinned to `^1` (MIT). v2 is AGPL — do not upgrade.

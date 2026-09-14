@@ -2,46 +2,47 @@ import { NavLink, Outlet } from 'react-router';
 import { api } from '../api/client';
 import { useTheme, type Theme } from '../lib/theme';
 import { useApi } from '../lib/useApi';
+import { AutoThemeIcon, HopMark, MoonIcon, SunIcon } from './icons';
+import { ToastProvider } from './toast';
 
 const THEME_ORDER: Theme[] = ['system', 'light', 'dark'];
-const THEME_LABEL: Record<Theme, string> = { system: 'Auto', light: 'Light', dark: 'Dark' };
-const THEME_ICON: Record<Theme, string> = { system: '◐', light: '☀', dark: '☾' };
+const THEME_LABEL: Record<Theme, string> = { system: 'Match system', light: 'Light', dark: 'Dark' };
 
 function ThemeToggle() {
   const [theme, setTheme] = useTheme();
   const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length] ?? 'system';
+  const icon = theme === 'light' ? <SunIcon /> : theme === 'dark' ? <MoonIcon /> : <AutoThemeIcon />;
   return (
     <button
       type="button"
       onClick={() => setTheme(next)}
-      className="rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-      title={`Theme: ${THEME_LABEL[theme]} (click for ${THEME_LABEL[next]})`}
+      title={`Theme: ${THEME_LABEL[theme]}`}
       aria-label={`Theme: ${THEME_LABEL[theme]}. Switch to ${THEME_LABEL[next]}.`}
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-ink shadow-soft hover:bg-sunken"
     >
-      <span aria-hidden="true">{THEME_ICON[theme]}</span>
-      <span className="ml-1 hidden sm:inline">{THEME_LABEL[theme]}</span>
+      {icon}
     </button>
   );
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-2.5 py-1 text-sm font-medium ${
-    isActive
-      ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
-      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+  `flex-1 rounded-full px-4 py-2 text-center text-sm transition-colors sm:flex-none sm:px-[18px] ${
+    isActive ? 'bg-ink font-semibold text-ground' : 'font-medium text-muted hover:text-ink'
   }`;
 
 export function Layout() {
   const me = useApi(() => api.me(), []);
+  const email = me.data?.email;
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
-          <NavLink to="/" className="text-lg font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
-            Hop
+    <ToastProvider>
+      <div className="min-h-screen">
+        <header className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 pt-5 pb-2 sm:gap-6 sm:px-8 sm:pt-6">
+          <NavLink to="/" className="flex items-center gap-2.5" aria-label="Hop overview">
+            <HopMark />
+            <span className="font-display text-[22px] font-extrabold tracking-tight">Hop</span>
           </NavLink>
-          <nav className="flex gap-1">
+          <nav className="order-last flex w-full gap-1 rounded-full bg-surface p-1 shadow-soft sm:order-none sm:w-auto">
             <NavLink to="/" end className={navClass}>
               Overview
             </NavLink>
@@ -49,19 +50,25 @@ export function Layout() {
               Links
             </NavLink>
           </nav>
-          <div className="ml-auto flex min-w-0 items-center gap-2">
-            {me.data && (
-              <span className="hidden min-w-0 truncate text-sm text-slate-500 sm:block dark:text-slate-400" title={me.data.email}>
-                Signed in as <span className="font-medium text-slate-700 dark:text-slate-200">{me.data.email}</span>
-              </span>
-            )}
+          <div className="ml-auto flex items-center gap-2.5">
             <ThemeToggle />
+            {email && (
+              <div
+                className="flex h-10 items-center gap-2.5 rounded-full bg-surface p-1 shadow-soft sm:pr-4"
+                title={`Signed in as ${email}`}
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-apricot-soft font-semibold text-apricot uppercase">
+                  {email.charAt(0)}
+                </span>
+                <span className="hidden max-w-52 truncate text-sm font-medium sm:block">{email}</span>
+              </div>
+            )}
           </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">
-        <Outlet />
-      </main>
-    </div>
+        </header>
+        <main className="mx-auto max-w-6xl px-4 pt-4 pb-16 sm:px-8 sm:pt-6">
+          <Outlet />
+        </main>
+      </div>
+    </ToastProvider>
   );
 }

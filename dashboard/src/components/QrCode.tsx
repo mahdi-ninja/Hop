@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { Button, Card } from './ui';
+import { DownloadIcon } from './icons';
+import { Button, Card, CardTitle } from './ui';
 
 function download(href: string, filename: string) {
   const a = document.createElement('a');
@@ -14,7 +15,7 @@ export function QrCode({ url, name }: { url: string; name: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(
+    QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#1d2a24', light: '#ffffff' } }).then(
       (markup) => !cancelled && setSvg(markup),
       () => !cancelled && setSvg(null),
     );
@@ -35,20 +36,24 @@ export function QrCode({ url, name }: { url: string; name: string }) {
   };
 
   return (
-    <Card className="flex flex-col items-center gap-3">
-      <h2 className="self-start text-sm font-medium">QR code</h2>
+    <Card className="flex flex-col items-center">
+      <div className="self-stretch">
+        <CardTitle>QR code</CardTitle>
+      </div>
       {/* The QR is always dark-on-white so it stays scannable in dark mode. */}
       <div
-        className="w-40 rounded bg-white p-2 [&>svg]:h-auto [&>svg]:w-full"
+        className="w-44 rounded-2xl bg-white p-3 ring-1 ring-line [&>svg]:h-auto [&>svg]:w-full"
         role="img"
         aria-label={`QR code for ${url}`}
         dangerouslySetInnerHTML={svg ? { __html: svg } : undefined}
       />
-      <div className="flex gap-2">
-        <Button onClick={downloadSvg} disabled={!svg}>
-          SVG
+      <div className="mt-4 flex gap-2">
+        <Button size="sm" onClick={downloadSvg} disabled={!svg}>
+          <DownloadIcon /> SVG
         </Button>
-        <Button onClick={() => void downloadPng()}>PNG</Button>
+        <Button size="sm" onClick={() => void downloadPng()}>
+          <DownloadIcon /> PNG
+        </Button>
       </div>
     </Card>
   );
