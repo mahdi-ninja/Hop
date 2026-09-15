@@ -64,7 +64,7 @@ describe('deviceType', () => {
 });
 
 describe('buildVisit', () => {
-  const geo = { lookup: async () => ({ country: 'AU', region: 'Victoria', city: 'Melbourne' }) };
+  const geo = { lookup: async () => ({ continent: 'OC', country: 'AU', region: 'Victoria', city: 'Melbourne' }) };
 
   it('combines geo, referrer and parsed user agent', async () => {
     const req = new Request('https://go.example.com/abc', {

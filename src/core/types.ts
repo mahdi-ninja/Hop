@@ -1,3 +1,32 @@
+export type RuleField = 'continent' | 'country' | 'device' | 'browser' | 'os' | 'language' | 'visitor';
+
+export interface Condition {
+  field: RuleField;
+  op: 'in' | 'not_in';
+  values: string[];
+}
+
+export interface Destination {
+  url: string;
+  weight: number;
+}
+
+export interface RoutingRule {
+  conditions: Condition[];
+  window?: { start?: number; end?: number };
+  destinations: Destination[];
+}
+
+export interface Visitor {
+  continent: string | null;
+  country: string | null;
+  device: string | null;
+  browser: string | null;
+  os: string | null;
+  language: string | null;
+  isBot: boolean;
+}
+
 export interface Link {
   slug: string;
   url: string;
@@ -7,6 +36,7 @@ export interface Link {
   createdBy: string | null;
   updatedAt: number;
   updatedBy: string | null;
+  rules: RoutingRule[];
 }
 
 export type Device = 'desktop' | 'mobile' | 'tablet' | 'other';
@@ -80,6 +110,7 @@ export interface Identity {
 }
 
 export interface Geo {
+  continent: string | null;
   country: string | null;
   region: string | null;
   city: string | null;

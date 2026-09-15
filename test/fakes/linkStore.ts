@@ -1,4 +1,4 @@
-import { SlugTakenError, type LinkStore } from '../../src/core/ports';
+import { SlugTakenError, type LinkPatch, type LinkStore } from '../../src/core/ports';
 import type { Link } from '../../src/core/types';
 import { decodeCursor, encodeCursor } from '../../src/lib/cursor';
 
@@ -15,7 +15,7 @@ export class FakeLinkStore implements LinkStore {
 
   async getBySlug(slug: string): Promise<Link | null> {
     const link = this.links.get(slug);
-    return link ? { ...link } : null;
+    return link ? structuredClone(link) : null;
   }
 
   async list(q: { search?: string; cursor?: string; limit: number }): Promise<{ items: Link[]; nextCursor: string | null }> {
@@ -49,16 +49,18 @@ export class FakeLinkStore implements LinkStore {
       createdBy: input.by,
       updatedAt: now,
       updatedBy: input.by,
+      rules: [],
     };
     this.links.set(link.slug, link);
     return { ...link };
   }
 
-  async update(slug: string, patch: { url?: string; title?: string | null }, by: string): Promise<Link | null> {
+  async update(slug: string, patch: LinkPatch, by: string): Promise<Link | null> {
     const link = this.links.get(slug);
     if (!link) return null;
     if (patch.url !== undefined) link.url = patch.url;
     if (patch.title !== undefined) link.title = patch.title;
+    if (patch.rules !== undefined) link.rules = structuredClone(patch.rules);
     link.updatedAt = this.now();
     link.updatedBy = by;
     return { ...link };

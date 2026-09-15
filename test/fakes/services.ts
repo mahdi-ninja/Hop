@@ -14,7 +14,7 @@ export function createFakeServices(overrides: Partial<Omit<Services, 'links' | '
   return {
     links,
     visits: new FakeVisitStore(links),
-    geo: { lookup: async () => ({ country: null, region: null, city: null }) },
+    geo: { lookup: async () => ({ continent: null, country: null, region: null, city: null }) },
     identity: { identify: async () => null },
     assets: { fetch: async () => new Response('asset', { status: 200 }) },
     config: { shortDomain: 'go.example.com', rootRedirectUrl: null },

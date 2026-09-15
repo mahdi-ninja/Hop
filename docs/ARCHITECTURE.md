@@ -41,7 +41,8 @@ hop/
     middleware/auth.ts    # requireIdentity: calls IdentityProvider, CSRF checks
     lib/slug.ts           # generation + validation + reserved list
     lib/url.ts            # target validation, query-string merge
-    lib/visit.ts          # build NewVisit from request (UA, referrer, bot) + GeoLookup
+    lib/visit.ts          # read the visitor (geo, UA, referrer, language, bot) and build NewVisit
+    lib/routing.ts        # routing rule types, validation and first-match evaluation (runtime-agnostic)
     lib/title.ts          # extract <title> from HTML (runtime-agnostic)
     lib/errors.ts         # error helper matching API.md
     pages/notFound.ts     # 404 HTML
@@ -86,7 +87,7 @@ export interface LinkStore {
   getBySlug(slug: string): Promise<Link | null>;
   list(q: { search?: string; cursor?: string; limit: number }): Promise<{ items: Link[]; nextCursor: string | null }>;
   create(input: { slug: string; url: string; title: string | null; by: string }): Promise<Link>; // throws SlugTakenError
-  update(slug: string, patch: { url?: string; title?: string | null }, by: string): Promise<Link | null>;
+  update(slug: string, patch: { url?: string; title?: string | null; rules?: RoutingRule[] }, by: string): Promise<Link | null>;
   delete(slug: string): Promise<boolean>;   // also deletes the link's visits
   setTitleIfEmpty(slug: string, title: string): Promise<void>;
 }
@@ -99,7 +100,7 @@ export interface VisitStore {
 }
 
 export interface GeoLookup {
-  lookup(req: Request): Promise<{ country: string | null; region: string | null; city: string | null }>;
+  lookup(req: Request): Promise<{ continent: string | null; country: string | null; region: string | null; city: string | null }>;
 }
 
 export interface IdentityProvider {
@@ -136,6 +137,7 @@ the Workers test pool.
 ```
 Visitor ──GET /abc──▶ Worker ──read links by slug──▶ D1
                         │
+                        ├──▶ (link has rules) read visitor + resolveTarget()   (in-memory)
                         ├──▶ 302 Location: target   (response sent)
                         └──▶ ctx.waitUntil: INSERT visit + UPDATE visit_count (db.batch)
 
@@ -179,7 +181,7 @@ Route precedence in the Worker (first match wins):
 `workers_dev: false` and `preview_urls: false` matter: they stop anyone reaching the
 Worker on a `*.workers.dev` URL that isn't behind Access.
 
-## Database schema (`migrations/0001_init.sql`)
+## Database schema (`migrations/0001_init.sql`, `0002_routing_rules.sql`)
 ```sql
 CREATE TABLE links (
   slug         TEXT PRIMARY KEY,
@@ -208,8 +210,13 @@ CREATE TABLE visits (
 );
 CREATE INDEX idx_visits_slug_ts ON visits(slug, ts);
 CREATE INDEX idx_visits_ts ON visits(ts);
+
+-- 0002_routing_rules.sql
+ALTER TABLE links ADD COLUMN rules TEXT;  -- JSON array of routing rules; NULL = none
 ```
 Notes:
+- Rules live on the `links` row (not a separate table) so the redirect stays one indexed read.
+  The adapter parses the JSON and treats NULL or malformed JSON as no rules.
 - `visit_count` is a denormalised total of **non-bot** visits for fast list rendering;
   increment it in the same `db.batch()` as the visit insert only when `is_bot = 0`.
 - Do not rely on `ON DELETE CASCADE` alone — explicitly delete visits then the link in one batch.
@@ -250,6 +257,17 @@ whose `Origin` header is present and not `https://${SHORT_DOMAIN}` (allow localh
   `headless`. Empty UA counts as bot.
 - All of this runs inside `services.defer(...)` — wrap in try/catch and log errors; a logging
   failure must never affect a redirect.
+
+## Smart routing (`lib/routing.ts`)
+- Pure, runtime-agnostic module: rule types, `validateRules(input, shortDomain)` and
+  `resolveTarget(defaultUrl, rules, visitor, now, random)` → `{ url, ruleIndex | null }`.
+  `now` and `random` are parameters so evaluation is deterministic in tests.
+- The redirect route only builds the visitor (geo via `services.geo`, UA parse, language,
+  bot flag) when the link has rules. If reading the visitor fails, it falls back to the default
+  URL. The same visitor object is reused for the deferred visit record.
+- `continent` comes from `request.cf.continent` in the Cloudflare `GeoLookup`.
+- The dashboard imports `lib/routing.ts` for its "Test a visitor" panel, so the preview and the
+  Worker can't drift apart.
 
 ## Background title fetch (`lib/title.ts`)
 On create without a title: `services.defer(fetchTitle(url))` — `fetch` with

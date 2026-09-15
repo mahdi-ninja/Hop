@@ -1,4 +1,4 @@
-import type { Config, Geo, Identity, Link, LinkStats, NewVisit, Overview, Range, Visit } from './types';
+import type { Config, Geo, Identity, Link, LinkStats, NewVisit, Overview, Range, RoutingRule, Visit } from './types';
 
 export class SlugTakenError extends Error {
   constructor(slug: string) {
@@ -7,12 +7,18 @@ export class SlugTakenError extends Error {
   }
 }
 
+export interface LinkPatch {
+  url?: string;
+  title?: string | null;
+  rules?: RoutingRule[];
+}
+
 export interface LinkStore {
   getBySlug(slug: string): Promise<Link | null>;
   list(q: { search?: string; cursor?: string; limit: number }): Promise<{ items: Link[]; nextCursor: string | null }>;
   /** @throws SlugTakenError */
   create(input: { slug: string; url: string; title: string | null; by: string }): Promise<Link>;
-  update(slug: string, patch: { url?: string; title?: string | null }, by: string): Promise<Link | null>;
+  update(slug: string, patch: LinkPatch, by: string): Promise<Link | null>;
   /** Also deletes the link's visits. */
   delete(slug: string): Promise<boolean>;
   setTitleIfEmpty(slug: string, title: string): Promise<void>;

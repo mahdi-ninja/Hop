@@ -1,4 +1,5 @@
 import type { Link } from '../../core/types';
+import { parseStoredRules } from '../../lib/routing';
 
 export interface LinkRow {
   slug: string;
@@ -9,6 +10,7 @@ export interface LinkRow {
   created_by: string | null;
   updated_at: number;
   updated_by: string | null;
+  rules: string | null;
 }
 
 export function rowToLink(row: LinkRow): Link {
@@ -21,5 +23,6 @@ export function rowToLink(row: LinkRow): Link {
     createdBy: row.created_by,
     updatedAt: row.updated_at,
     updatedBy: row.updated_by,
+    rules: parseStoredRules(row.rules),
   };
 }

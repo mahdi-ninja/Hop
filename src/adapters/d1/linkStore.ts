@@ -1,4 +1,4 @@
-import { SlugTakenError, type LinkStore } from '../../core/ports';
+import { SlugTakenError, type LinkPatch, type LinkStore } from '../../core/ports';
 import type { Link } from '../../core/types';
 import { decodeCursor, encodeCursor } from '../../lib/cursor';
 import { rowToLink, type LinkRow } from './rows';
@@ -59,7 +59,7 @@ export class D1LinkStore implements LinkStore {
     return rowToLink(row);
   }
 
-  async update(slug: string, patch: { url?: string; title?: string | null }, by: string): Promise<Link | null> {
+  async update(slug: string, patch: LinkPatch, by: string): Promise<Link | null> {
     const sets = ['updated_at = ?', 'updated_by = ?'];
     const params: (string | number | null)[] = [Date.now(), by];
     if (patch.url !== undefined) {
@@ -69,6 +69,10 @@ export class D1LinkStore implements LinkStore {
     if (patch.title !== undefined) {
       sets.push('title = ?');
       params.push(patch.title);
+    }
+    if (patch.rules !== undefined) {
+      sets.push('rules = ?');
+      params.push(patch.rules.length ? JSON.stringify(patch.rules) : null);
     }
     const row = await this.db
       .prepare(`UPDATE links SET ${sets.join(', ')} WHERE slug = ? RETURNING *`)

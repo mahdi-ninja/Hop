@@ -27,9 +27,31 @@ JSON in, JSON out. Timestamps are UTC milliseconds.
   "createdAt": 1790000000000,
   "createdBy": "alice@example.com",
   "updatedAt": 1790000000000,
-  "updatedBy": "alice@example.com"
+  "updatedBy": "alice@example.com",
+  "rules": []
 }
 ```
+`rules` is the link's ordered routing rules (see below); `[]` when it has none.
+
+## Routing rule object
+```json
+{
+  "conditions": [
+    { "field": "country", "op": "in", "values": ["AU", "NZ"] },
+    { "field": "device", "op": "not_in", "values": ["desktop"] }
+  ],
+  "window": { "start": 1790000000000, "end": 1790600000000 },
+  "destinations": [
+    { "url": "https://example.com/au-a", "weight": 50 },
+    { "url": "https://example.com/au-b", "weight": 50 }
+  ]
+}
+```
+- `field`: `continent` | `country` | `device` | `browser` | `os` | `language` | `visitor`
+- `op`: `in` | `not_in`
+- `window` is optional; `start` and `end` are each optional (UTC ms).
+- Validation rules are in SPEC.md. Errors: `INVALID_URL` for a bad destination URL, otherwise
+  `INVALID_INPUT`; the message says which rule (1-based) is wrong.
 
 ## Endpoints
 
@@ -52,6 +74,11 @@ Body: `{ "url": string, "slug"?: string, "title"?: string }`
 
 ### `PATCH /api/links/:slug`
 Body: `{ "url"?: string, "title"?: string | null }` — at least one field.
+→ `200 Link` · errors: `INVALID_URL`, `INVALID_INPUT`, `NOT_FOUND`
+
+### `PUT /api/links/:slug/rules`
+Body: `{ "rules": [Rule, ...] }` — replaces the whole ordered list (`[]` removes all rules).
+Updates `updatedAt` / `updatedBy`.
 → `200 Link` · errors: `INVALID_URL`, `INVALID_INPUT`, `NOT_FOUND`
 
 ### `DELETE /api/links/:slug`

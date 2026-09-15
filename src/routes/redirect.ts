@@ -2,7 +2,8 @@ import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../core/services';
 import { isValidSlugFormat } from '../lib/slug';
 import { mergeQuery } from '../lib/url';
-import { recordVisit } from '../lib/visit';
+import { resolveTarget } from '../lib/routing';
+import { readVisitor, recordVisit, type VisitorDetails } from '../lib/visit';
 import { NOT_FOUND_HTML } from '../pages/notFound';
 
 // no-store so a slug that 404s now redirects as soon as someone creates it.
@@ -31,9 +32,21 @@ export function redirectRoutes(): Hono<AppEnv> {
     const link = await services.links.getBySlug(slug);
     if (!link) return notFoundPage(c);
 
-    if (c.req.method === 'GET') services.defer(recordVisit(c.req.raw, slug, services));
+    let target = link.url;
+    let visitor: VisitorDetails | undefined;
+    // Only links with rules pay for reading the visitor before the response is sent.
+    if (link.rules.length > 0) {
+      try {
+        visitor = await readVisitor(c.req.raw, services);
+        target = resolveTarget(link.url, link.rules, visitor, Date.now(), Math.random).url;
+      } catch (err) {
+        console.error('Routing failed; using the default URL', { slug, err });
+      }
+    }
 
-    return redirectTo(mergeQuery(link.url, new URL(c.req.url).searchParams));
+    if (c.req.method === 'GET') services.defer(recordVisit(c.req.raw, slug, services, visitor));
+
+    return redirectTo(mergeQuery(target, new URL(c.req.url).searchParams));
   });
 
   return routes;

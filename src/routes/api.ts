@@ -5,6 +5,7 @@ import type { Link } from '../core/types';
 import { decodeCursor } from '../lib/cursor';
 import { apiError } from '../lib/errors';
 import { parseBotsFlag, parseRangeName, resolveRange } from '../lib/range';
+import { validateRules } from '../lib/routing';
 import { checkCustomSlug, generateSlug, isValidSlugFormat } from '../lib/slug';
 import { fillTitle, MAX_TITLE_LENGTH } from '../lib/title';
 import { validateTargetUrl } from '../lib/url';
@@ -29,6 +30,7 @@ function toApiLink(link: Link, shortDomain: string) {
     createdBy: link.createdBy,
     updatedAt: link.updatedAt,
     updatedBy: link.updatedBy,
+    rules: link.rules,
   };
 }
 
@@ -161,6 +163,19 @@ export function apiRoutes(): Hono<AppEnv> {
     }
 
     const link = isValidSlugFormat(slug) ? await links.update(slug, patch, c.get('userEmail')) : null;
+    if (!link) return apiError(c, 'NOT_FOUND', 'Link not found.');
+    return c.json(toApiLink(link, config.shortDomain));
+  });
+
+  api.put('/links/:slug/rules', async (c) => {
+    const { links, config } = c.get('services');
+    const body = await readJsonObject(c);
+    if (!body) return apiError(c, 'INVALID_INPUT', 'Request body must be a JSON object.');
+    const result = validateRules(body.rules, config.shortDomain);
+    if (!result.ok) return apiError(c, result.code, result.message);
+
+    const slug = c.req.param('slug');
+    const link = isValidSlugFormat(slug) ? await links.update(slug, { rules: result.rules }, c.get('userEmail')) : null;
     if (!link) return apiError(c, 'NOT_FOUND', 'Link not found.');
     return c.json(toApiLink(link, config.shortDomain));
   });

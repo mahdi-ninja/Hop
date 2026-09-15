@@ -106,3 +106,28 @@ describe('D1LinkStore mutations', () => {
     expect((await store.getBySlug('t2'))?.title).toBe('Kept');
   });
 });
+
+describe('D1LinkStore rules', () => {
+  it('round-trips rules as JSON and clears them with an empty list', async () => {
+    const store = new D1LinkStore(env.DB);
+    await store.create({ slug: 'rr', url: 'https://example.com/', title: null, by: 'a' });
+    expect((await store.getBySlug('rr'))?.rules).toEqual([]);
+    const rules = [
+      {
+        conditions: [{ field: 'country' as const, op: 'in' as const, values: ['AU'] }],
+        window: { start: 1 },
+        destinations: [{ url: 'https://example.com/au', weight: 100 }],
+      },
+    ];
+    expect((await store.update('rr', { rules }, 'b'))?.rules).toEqual(rules);
+    expect((await store.getBySlug('rr'))?.rules).toEqual(rules);
+    await store.update('rr', { rules: [] }, 'b');
+    const row = await env.DB.prepare('SELECT rules FROM links WHERE slug = ?').bind('rr').first<{ rules: string | null }>();
+    expect(row?.rules).toBeNull();
+  });
+
+  it('treats malformed stored rules as none', async () => {
+    await env.DB.prepare("INSERT INTO links (slug, url, created_at, updated_at, rules) VALUES ('bad', 'https://example.com/', 0, 0, '{oops')").run();
+    expect((await new D1LinkStore(env.DB).getBySlug('bad'))?.rules).toEqual([]);
+  });
+});
