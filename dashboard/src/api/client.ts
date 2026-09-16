@@ -1,4 +1,4 @@
-import type { ApiLink, LinkPage, LinkStats, Overview, RangeName, Visit } from './types';
+import type { ApiLink, LinkPage, LinkStats, Overview, RangeName, RoutingRule, Visit } from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -60,6 +60,9 @@ export const api = {
 
   updateLink: (slug: string, patch: { url?: string; title?: string | null }) =>
     request<ApiLink>(slugPath(slug), { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  setRules: (slug: string, rules: RoutingRule[]) =>
+    request<ApiLink>(`${slugPath(slug)}/rules`, { method: 'PUT', body: JSON.stringify({ rules }) }),
 
   deleteLink: (slug: string) => request<void>(slugPath(slug), { method: 'DELETE' }),
 

@@ -20,6 +20,31 @@ const links = [
   ['old-promo', 'https://example.com/promo/2026', 'Spring promo', 2],
 ];
 
+const dayMs = 86_400_000;
+const rulesBySlug = {
+  docs: [
+    { conditions: [{ field: 'language', op: 'in', values: ['ja'] }], destinations: [{ url: 'https://developers.cloudflare.com/ja-jp/workers/', weight: 100 }] },
+    { conditions: [{ field: 'visitor', op: 'in', values: ['bot'] }], destinations: [{ url: 'https://developers.cloudflare.com/', weight: 100 }] },
+  ],
+  hiring: [
+    { conditions: [{ field: 'continent', op: 'in', values: ['OC'] }], destinations: [{ url: 'https://example.com/careers?team=eng&region=apac', weight: 100 }] },
+  ],
+  launch: [
+    {
+      conditions: [],
+      window: { start: Date.now() - 2 * dayMs, end: Date.now() + 5 * dayMs },
+      destinations: [
+        { url: 'https://example.com/blog/launch?variant=a', weight: 50 },
+        { url: 'https://example.com/blog/launch?variant=b', weight: 50 },
+      ],
+    },
+  ],
+  gh: [
+    { conditions: [{ field: 'os', op: 'in', values: ['iOS'] }], destinations: [{ url: 'https://apps.apple.com/app/github/id1477376905', weight: 100 }] },
+    { conditions: [{ field: 'os', op: 'in', values: ['Android'] }, { field: 'device', op: 'in', values: ['mobile', 'tablet'] }], destinations: [{ url: 'https://play.google.com/store/apps/details?id=com.github.android', weight: 100 }] },
+  ],
+};
+
 const countries = [['AU', 'Victoria', 'Melbourne'], ['AU', 'New South Wales', 'Sydney'], ['US', 'California', 'San Francisco'],
   ['US', 'New York', 'New York'], ['GB', 'England', 'London'], ['DE', 'Berlin', 'Berlin'], ['NZ', 'Auckland', 'Auckland'],
   ['JP', 'Tokyo', 'Tokyo'], ['CA', 'Ontario', 'Toronto'], ['IN', 'Karnataka', 'Bengaluru'], ['BR', 'São Paulo', 'São Paulo'],
@@ -56,8 +81,8 @@ links.forEach(([slug, url, title, weight], i) => {
   }
   const humanCount = visits.filter((v) => v[9] === 0).length;
   statements.push(
-    `INSERT INTO links (slug, url, title, visit_count, created_at, created_by, updated_at, updated_by) VALUES (${[
-      slug, url, title, humanCount, createdAt, seedEmail, createdAt, seedEmail,
+    `INSERT INTO links (slug, url, title, visit_count, created_at, created_by, updated_at, updated_by, rules) VALUES (${[
+      slug, url, title, humanCount, createdAt, seedEmail, createdAt, seedEmail, rulesBySlug[slug] ? JSON.stringify(rulesBySlug[slug]) : null,
     ].map(sql).join(', ')});`,
   );
   for (let start = 0; start < visits.length; start += 200) {

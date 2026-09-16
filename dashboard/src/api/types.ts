@@ -1,3 +1,7 @@
+import type { RoutingRule } from '../../../src/core/types';
+
+export type { Condition, Destination, RoutingRule, RuleField, Visitor } from '../../../src/core/types';
+
 export interface ApiLink {
   slug: string;
   shortUrl: string;
@@ -8,6 +12,7 @@ export interface ApiLink {
   createdBy: string | null;
   updatedAt: number;
   updatedBy: string | null;
+  rules: RoutingRule[];
 }
 
 export interface LinkPage {

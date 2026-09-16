@@ -4,6 +4,7 @@ import { api, ApiError, errorMessage } from '../api/client';
 import type { ApiLink, RangeName, Visit } from '../api/types';
 import { Modal } from '../components/Modal';
 import { QrCode } from '../components/QrCode';
+import { RoutingSection } from '../components/RoutingSection';
 import {
   ArrowLeftIcon,
   BotIcon,
@@ -360,6 +361,8 @@ export function LinkDetailPage() {
         </Card>
         <QrCode url={data.shortUrl} name={`hop-${data.slug}`} />
       </div>
+
+      <RoutingSection link={data} onChange={link.setData} />
 
       <LinkStatsSection slug={data.slug} />
 

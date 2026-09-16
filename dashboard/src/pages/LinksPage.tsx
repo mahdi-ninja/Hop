@@ -25,8 +25,15 @@ function LinkCard({ link }: { link: ApiLink }) {
           <span className="sm:hidden">/{link.slug}</span>
           <span className="hidden sm:inline">{displayUrl(link.shortUrl)}</span>
         </Link>
-        <p className={`truncate font-semibold ${link.title ? '' : 'font-medium text-faint'}`}>
-          {link.title ?? (pendingTitle ? 'Fetching title…' : 'No title')}
+        <p className="flex min-w-0 items-center gap-2">
+          <span className={`truncate font-semibold ${link.title ? '' : 'font-medium text-faint'}`}>
+            {link.title ?? (pendingTitle ? 'Fetching title…' : 'No title')}
+          </span>
+          {link.rules.length > 0 && (
+            <span className="shrink-0 rounded-full bg-apricot-soft px-2 py-0.5 text-[11px] font-bold text-apricot">
+              {link.rules.length === 1 ? '1 route' : `${link.rules.length} routes`}
+            </span>
+          )}
         </p>
         <p className="truncate text-[13px] text-faint">
           <span title={link.url}>{displayUrl(link.url)}</span> · {formatShortDate(link.createdAt)}
