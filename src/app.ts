@@ -3,6 +3,7 @@ import type { AppEnv } from './core/services';
 import { apiError } from './lib/errors';
 import { adminRoutes } from './routes/admin';
 import { apiRoutes } from './routes/api';
+import { iconRoutes } from './routes/icons';
 import { notFoundPage, redirectRoutes } from './routes/redirect';
 
 export function createApp(): Hono<AppEnv> {
@@ -17,6 +18,7 @@ export function createApp(): Hono<AppEnv> {
   app.route('/api', apiRoutes());
   app.route('/admin', adminRoutes());
   app.get('/health', (c) => c.text('ok'));
+  app.route('/', iconRoutes());
   app.route('/', redirectRoutes());
   app.notFound(notFoundPage);
 

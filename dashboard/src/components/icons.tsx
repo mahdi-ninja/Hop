@@ -122,16 +122,16 @@ export const BotIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** The Hop logo. Brand colours are fixed so the mark looks the same in both themes. */
 export function HopMark({ size = 36 }: { size?: number }) {
   return (
-    <span
-      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-accent text-on-accent"
-      style={{ width: size, height: size }}
-      aria-hidden="true"
-    >
-      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-        <path d="M3 16c2-8 5-8 6-2M9 14c1.5-8 5-8 6-2M15 12c1-5 3-5 4-2" />
-      </svg>
-    </span>
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="shrink-0">
+      <rect width="64" height="64" rx="15" fill="#0f7a61" />
+      <g transform="translate(2 -4)">
+        <path d="M14 46 C21 12, 43 13, 46.5 39" fill="none" stroke="#ffffff" strokeWidth="6.5" strokeLinecap="round" />
+        <path d="M48 49 L52.2 37.2 L40.4 39 Z" fill="#ffffff" stroke="#ffffff" strokeWidth="2.5" strokeLinejoin="round" />
+        <circle cx="14" cy="46" r="7" fill="#f2a15e" />
+      </g>
+    </svg>
   );
 }
