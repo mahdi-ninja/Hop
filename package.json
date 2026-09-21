@@ -6,13 +6,15 @@
     "dev": "npm run build:dashboard && wrangler dev",
     "dev:dashboard": "npm --workspace dashboard run dev",
     "build:dashboard": "npm --workspace dashboard run build",
+    "setup": "node scripts/setup.mjs",
+    "doctor": "node scripts/doctor.mjs",
     "typecheck": "tsc --noEmit && npm --workspace dashboard run typecheck",
     "test": "npm run check:boundaries && vitest run",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "db:migrate:local": "wrangler d1 migrations apply hop --local",
-    "db:migrate:remote": "wrangler d1 migrations apply hop --remote",
+    "db:migrate:remote": "node scripts/deploy.mjs migrate",
     "db:seed:local": "node scripts/seed-local.mjs",
-    "deploy": "npm run build:dashboard && wrangler deploy",
+    "deploy": "node scripts/deploy.mjs",
     "cf-typegen": "wrangler types --strict-vars=false"
   },
   "dependencies": {

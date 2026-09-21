@@ -15,6 +15,7 @@ JSON in, JSON out. Timestamps are UTC milliseconds.
 | 404 | `NOT_FOUND` |
 | 409 | `SLUG_TAKEN` |
 | 500 | `INTERNAL` |
+| 503 | `NOT_CONFIGURED` (Access team domain / AUD not set for this deployment) |
 
 ## Link object
 ```json

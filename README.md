@@ -35,13 +35,14 @@ under `wrangler dev` (otherwise wrangler rewrites it to the production route). N
 
 ## Deploy
 
-Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): create the D1 database, set your domain
-and Access values in `wrangler.jsonc`, set up the Cloudflare Access application, then:
-
 ```sh
-npm run db:migrate:remote
-npm run deploy
+npm run setup     # first time: asks about domain, database and Access, then deploys
+npm run deploy    # afterwards
 ```
+
+Your deployment's values live in the git-ignored `hop.config.json`; `wrangler.jsonc` stays a
+template with placeholders. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for what each step
+does, the Access options, and a manual fallback.
 
 ## Commands
 
@@ -55,8 +56,10 @@ npm run deploy
 | `npm run check:boundaries` | Fails if Cloudflare-specific APIs leak outside `src/worker.ts` / `src/adapters/`, or `c.env` is read outside `src/app.ts` |
 | `npm run db:migrate:local` | Apply migrations to the local D1 database |
 | `npm run db:seed:local` | Replace local data with ~10 demo links and a few thousand visits |
-| `npm run db:migrate:remote` | Apply migrations to the production D1 database |
-| `npm run deploy` | Build the dashboard, then `wrangler deploy` |
+| `npm run db:migrate:remote` | Apply migrations to the production D1 database (uses `hop.config.json`) |
+| `npm run setup` | Interactive first deploy: account, domain, database, Access, then deploy |
+| `npm run deploy` | Preflight checks, build, remote migrations, deploy, live checks |
+| `npm run doctor` | Check deploy readiness without changing anything (`-- --live` also checks the site) |
 | `npm run cf-typegen` | Regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc` |
 
 ## Notes

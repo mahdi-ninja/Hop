@@ -12,6 +12,8 @@ interface WorkerEnv extends Omit<Env, 'DEV_AUTH_EMAIL'> {
 }
 
 const app = createApp();
+
+const isPlaceholder = (value: string | undefined) => !value || value.includes('your-');
 const geo = new CloudflareGeoLookup();
 
 function buildServices(env: WorkerEnv, ctx: ExecutionContext): Services {
@@ -28,6 +30,7 @@ function buildServices(env: WorkerEnv, ctx: ExecutionContext): Services {
     config: {
       shortDomain: env.SHORT_DOMAIN,
       rootRedirectUrl: env.ROOT_REDIRECT_URL || null,
+      accessConfigured: !isPlaceholder(env.ACCESS_TEAM_DOMAIN) && !isPlaceholder(env.ACCESS_AUD),
     },
   };
 }

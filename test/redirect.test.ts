@@ -6,7 +6,7 @@ const app = createApp();
 
 async function setup(config?: { rootRedirectUrl: string | null }) {
   const services = createFakeServices(
-    config ? { config: { shortDomain: 'go.example.com', ...config } } : {},
+    config ? { config: { shortDomain: 'go.example.com', accessConfigured: true, ...config } } : {},
   );
   await services.links.create({ slug: 'docs', url: 'https://example.com/docs?ref=hop', title: null, by: 'a@b.c' });
   const request = (path: string, init?: RequestInit) =>

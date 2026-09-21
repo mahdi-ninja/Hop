@@ -118,7 +118,7 @@ export interface Services {
   identity: IdentityProvider;
   defer(p: Promise<unknown>): void;         // background work (waitUntil on Workers)
   assets: AssetServer;                      // serves dashboard files (env.ASSETS on Workers)
-  config: { shortDomain: string; rootRedirectUrl: string | null };
+  config: { shortDomain: string; rootRedirectUrl: string | null; accessConfigured: boolean };
 }
 ```
 Shapes of `Link`, `LinkStats`, `Overview`, `Visit` mirror API.md (camelCase); adapters

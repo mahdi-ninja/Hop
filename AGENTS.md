@@ -46,6 +46,8 @@ short links. Access control is handled by Cloudflare Access — Hop has no login
 - `npm run typecheck`
 - `npm test` — boundary check, then Vitest in the Workers pool
 - `npm run check:boundaries`
-- `npm run db:migrate:local` / `npm run db:migrate:remote`
+- `npm run db:migrate:local` / `npm run db:migrate:remote` (remote uses `hop.config.json`)
 - `npm run db:seed:local` — demo links and visits in local D1
-- `npm run deploy` — builds dashboard, then `wrangler deploy`
+- `npm run setup` — interactive first deploy; writes the git-ignored `hop.config.json`
+- `npm run deploy` — checks, builds dashboard, applies remote migrations, deploys, verifies
+- `npm run doctor` — deploy-readiness checks (`-- --live` checks the deployed site)

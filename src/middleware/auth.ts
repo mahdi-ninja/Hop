@@ -25,6 +25,10 @@ export function requireIdentity(kind: 'api' | 'page'): MiddlewareHandler<AppEnv>
   return async (c, next) => {
     const services = c.get('services');
     const identity = await services.identity.identify(c.req.raw);
+    if (!identity && !services.config.accessConfigured) {
+      const message = "Cloudflare Access isn't configured for this deployment yet. Run `npm run setup`, then deploy again.";
+      return kind === 'api' ? apiError(c, 'NOT_CONFIGURED', message) : c.text(message, 503);
+    }
     if (!identity) {
       return kind === 'api' ? apiError(c, 'UNAUTHORIZED', 'Authentication required.') : c.text('Unauthorized', 401);
     }

@@ -3,3 +3,5 @@ node_modules/
 .wrangler/
 .dev.vars
 dist/
+# Per-deployment settings written by `npm run setup`
+hop.config.json

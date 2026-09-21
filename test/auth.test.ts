@@ -116,3 +116,29 @@ describe('CSRF checks', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('unconfigured Access', () => {
+  function unconfigured(identity: IdentityProvider = { identify: async () => null }) {
+    return createFakeServices({ identity, config: { shortDomain: 'go.example.com', rootRedirectUrl: null, accessConfigured: false } });
+  }
+
+  it('explains the problem instead of a bare 401', async () => {
+    const api = await app.request('https://go.example.com/api/me', {}, { services: unconfigured() });
+    expect(api.status).toBe(503);
+    expect(await api.json()).toMatchObject({ error: { code: 'NOT_CONFIGURED', message: expect.stringContaining('npm run setup') } });
+    const page = await app.request('https://go.example.com/admin/', {}, { services: unconfigured() });
+    expect(page.status).toBe(503);
+    expect(await page.text()).toContain('npm run setup');
+  });
+
+  it('still lets the local dev bypass through', async () => {
+    const res = await app.request('https://go.example.com/api/me', { headers: authed() }, { services: unconfigured(tokenIdentity) });
+    expect(res.status).toBe(200);
+  });
+
+  it('does not affect public short links', async () => {
+    const services = unconfigured();
+    await services.links.create({ slug: 'pub', url: 'https://example.com/', title: null, by: 'a' });
+    expect((await app.request('https://go.example.com/pub', {}, { services })).status).toBe(302);
+  });
+});

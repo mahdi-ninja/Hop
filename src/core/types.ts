@@ -119,4 +119,6 @@ export interface Geo {
 export interface Config {
   shortDomain: string;
   rootRedirectUrl: string | null;
+  /** False while ACCESS_TEAM_DOMAIN / ACCESS_AUD are unset or still placeholders. */
+  accessConfigured: boolean;
 }

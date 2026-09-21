@@ -11,6 +11,7 @@ const STATUS_BY_CODE = {
   NOT_FOUND: 404,
   SLUG_TAKEN: 409,
   INTERNAL: 500,
+  NOT_CONFIGURED: 503,
 } as const satisfies Record<string, ContentfulStatusCode>;
 
 export type ErrorCode = keyof typeof STATUS_BY_CODE;
