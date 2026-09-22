@@ -1,4 +1,6 @@
-import { accountEnv, fail, ok, warn, wrangler, wranglerJson } from './cli.mjs';
+import dns from 'node:dns/promises';
+import https from 'node:https';
+import { accountEnv, confirm, fail, info, ok, warn, wrangler, wranglerJson } from './cli.mjs';
 import { validateHopConfig } from './hop-config.mjs';
 
 /** Each check logs its own result and returns 'ok' | 'warn' | 'fail'. */
@@ -82,44 +84,111 @@ export async function checkRemoteMigrations(config, deployConfigPath) {
   }
 }
 
-async function fetchNoRedirect(url) {
-  return fetch(url, { redirect: 'manual', headers: { 'User-Agent': 'hop-setup-check' } });
+const FRESH_DNS_SERVERS = ['1.1.1.1', '1.0.0.1', '8.8.8.8'];
+
+/**
+ * Resolves through public DNS first. The OS resolver (and so plain fetch) can cache the
+ * "no such domain" answer from before the custom domain existed for several minutes.
+ */
+async function resolveFresh(hostname) {
+  const resolver = new dns.Resolver({ timeout: 2000, tries: 1 });
+  resolver.setServers(FRESH_DNS_SERVERS);
+  const found = [];
+  for (const [family, method] of [[4, 'resolve4'], [6, 'resolve6']]) {
+    try {
+      for (const address of await resolver[method](hostname)) found.push({ address, family });
+    } catch {
+      // Missing record types are normal; an empty result falls back below.
+    }
+  }
+  if (found.length) return found;
+  return dns.lookup(hostname, { all: true });
+}
+
+function freshLookup(hostname, options, callback) {
+  resolveFresh(hostname).then(
+    (addresses) => {
+      if (!addresses.length) return callback(Object.assign(new Error(`${hostname} has no DNS records`), { code: 'ENOTFOUND' }));
+      if (options?.all) return callback(null, addresses);
+      const preferred = addresses.find((a) => a.family === (options?.family || 4)) ?? addresses[0];
+      return callback(null, preferred.address, preferred.family);
+    },
+    (err) => callback(err),
+  );
+}
+
+/** One HTTPS request without following redirects. Never throws; failures come back as `problem`. */
+function probe(url) {
+  return new Promise((resolve) => {
+    const req = https.get(url, { lookup: freshLookup, timeout: 8000, headers: { 'User-Agent': 'hop-setup-check' } }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        if (body.length < 2048) body += chunk;
+      });
+      res.on('end', () => resolve({ status: res.statusCode, location: res.headers.location ?? '', body }));
+    });
+    req.on('timeout', () => req.destroy(Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' })));
+    req.on('error', (err) => resolve({ problem: describeNetworkError(err) }));
+  });
+}
+
+function describeNetworkError(err) {
+  const code = String(err.code ?? '');
+  if (['ENOTFOUND', 'ENODATA', 'EAI_AGAIN', 'ESERVFAIL'].includes(code)) return "its DNS record doesn't resolve yet";
+  if (/CERT|TLS|SSL|EPROTO/i.test(code) || /certificate|handshake/i.test(err.message)) return "its HTTPS certificate isn't ready yet";
+  if (['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH'].includes(code)) return 'connections are not being accepted yet';
+  return err.message;
+}
+
+function describeHealth(result) {
+  if (result.problem) return result.problem;
+  if (result.status === 200 && result.body.trim() === 'ok') return null;
+  if (result.status >= 520 && result.status <= 530) return `Cloudflare is still attaching the domain (HTTP ${result.status})`;
+  return `/health answered HTTP ${result.status} instead of "ok"`;
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Checks the live deployment. Custom-domain certificates can take a minute, so /health is retried. */
-export async function verifyDeployment(config, { waitSeconds = 120 } = {}) {
+/**
+ * Waits for the live site, then checks Access protection. Returns 'ok' | 'warn' | 'fail', or
+ * 'pending' when the site isn't reachable yet: the deploy worked, the domain is still coming up.
+ */
+export async function verifyDeployment(config, { waitSeconds = 300, askToKeepWaiting = true } = {}) {
   const base = `https://${config.shortDomain}`;
-  let healthy = false;
-  for (let waited = 0; waited <= waitSeconds; waited += 10) {
-    try {
-      const res = await fetchNoRedirect(`${base}/health`);
-      if (res.status === 200 && (await res.text()).trim() === 'ok') {
-        healthy = true;
-        break;
+  let reason = describeHealth(await probe(`${base}/health`));
+  let lastReported = null;
+  let deadline = Date.now() + waitSeconds * 1000;
+
+  while (reason) {
+    if (Date.now() >= deadline) {
+      warn(`${base} isn't reachable yet: ${reason}.`);
+      if (askToKeepWaiting && process.stdin.isTTY && (await confirm('Keep waiting another 3 minutes?', true))) {
+        deadline = Date.now() + 180_000;
+        continue;
       }
-    } catch {
-      // DNS or TLS may not be ready yet; retry below.
+      return 'pending';
     }
-    if (waited === 0) warn(`Waiting for ${base} to come up (new custom domains can take a minute)…`);
-    await sleep(10_000);
-  }
-  if (!healthy) {
-    fail(`${base}/health did not respond with "ok". Check the Worker's custom domain in the Cloudflare dashboard.`);
-    return 'fail';
+    if (reason !== lastReported) {
+      info(`Waiting for ${base}: ${reason}…`);
+      lastReported = reason;
+    }
+    await sleep(5000);
+    reason = describeHealth(await probe(`${base}/health`));
   }
   ok(`${base} is live.`);
 
   let result = 'ok';
   const accessHost = new URL(config.access.teamDomain).host;
   for (const path of ['/admin', '/api/me']) {
-    const res = await fetchNoRedirect(`${base}${path}`);
-    const location = res.headers.get('Location') ?? '';
-    if (res.status === 200) {
+    const res = await probe(`${base}${path}`);
+    if (res.problem) {
+      warn(`Couldn't check ${path}: ${res.problem}.`);
+      if (result === 'ok') result = 'warn';
+    } else if (res.status === 200) {
       fail(`${path} is reachable without signing in. Check the Access application's paths.`);
       result = 'fail';
-    } else if ([301, 302, 303, 307].includes(res.status) && location.includes(accessHost)) {
+    } else if ([301, 302, 303, 307].includes(res.status) && res.location.includes(accessHost)) {
       ok(`${path} redirects to your Access login.`);
     } else {
       warn(`${path} returned HTTP ${res.status} without a login redirect. Access may not cover it; the Worker still blocks it.`);
@@ -127,12 +196,28 @@ export async function verifyDeployment(config, { waitSeconds = 120 } = {}) {
     }
   }
 
-  const root = await fetchNoRedirect(`${base}/`);
-  if ((root.headers.get('Location') ?? '').includes(accessHost)) {
+  const root = await probe(`${base}/`);
+  if (!root.problem && root.location.includes(accessHost)) {
     fail('The bare domain asks for a login, so short links are not public. Remove the bare domain from the Access application.');
     result = 'fail';
-  } else {
+  } else if (!root.problem) {
     ok('Short links are public.');
   }
   return result;
+}
+
+/** One-line summary for the end of setup/deploy. */
+export function describeVerification(result, config) {
+  const admin = `https://${config.shortDomain}/admin`;
+  switch (result) {
+    case 'pending':
+      return `Deployed. The site isn't reachable from here yet; new custom domains can take a few minutes.
+Open ${admin} shortly, or check again with \`npm run doctor -- --live\`.`;
+    case 'fail':
+      return 'Deployed, but the live checks found problems (see above). Fix them, then run `npm run doctor -- --live`.';
+    case 'warn':
+      return `Hop is live at ${admin}, with warnings (see above).`;
+    default:
+      return `Hop is live at ${admin}`;
+  }
 }

@@ -1,6 +1,6 @@
 // `npm run setup`: interactive first-time (or repeat) deployment of Hop to Cloudflare.
 // Every step asks before changing anything and offers a default; `--yes` accepts all defaults.
-import { checkRemoteMigrations, checkTeamDomain } from './lib/checks.mjs';
+import { checkRemoteMigrations, checkTeamDomain, describeVerification } from './lib/checks.mjs';
 import {
   ACCEPT_DEFAULTS,
   accountEnv,
@@ -370,11 +370,8 @@ async function finish(config) {
   }
   closePrompts();
   const result = await deploy(config, { checks: true, firstStep: 9 });
-  console.log(
-    result === 'fail'
-      ? `\n${bold('Deployed, but the live checks found problems (see above).')} Fix them and run ${bold('npm run doctor -- --live')}.`
-      : `\n${bold('Hop is live.')} Open https://${config.shortDomain}/admin and sign in.\nNext time, just run ${bold('npm run deploy')}.`,
-  );
+  console.log(`\n${bold(describeVerification(result, config))}`);
+  if (result !== 'fail') console.log(`Next time, just run ${bold('npm run deploy')}.`);
 }
 
 try {

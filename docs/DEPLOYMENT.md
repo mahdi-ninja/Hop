@@ -63,7 +63,11 @@ Checks, without changing anything:
 `npm run doctor -- --live` also runs the live checks below against the deployed site.
 
 ## Verify (automatic after each deploy)
-- `https://<domain>/health` answers `ok` (new custom domains can take a minute).
+- `https://<domain>/health` answers `ok`. A new custom domain can take a few minutes: the check
+  waits up to 5 minutes, says what it's waiting for (DNS, certificate, Cloudflare attaching the
+  domain), and asks whether to keep waiting. It looks up DNS through 1.1.1.1 so a stale
+  "no such domain" answer cached by your OS can't hide a live site. If the site still isn't
+  reachable, the deploy is reported as done but not yet verified, not as a failure.
 - `/admin` and `/api/me` redirect to your Access login when not signed in.
 - The bare domain and short links do **not** ask for a login.
 

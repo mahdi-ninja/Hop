@@ -1,7 +1,7 @@
 // `npm run deploy`: preflight checks, dashboard build, remote migrations, then `wrangler deploy`,
 // all against the config merged from wrangler.jsonc and hop.config.json.
 // `node scripts/deploy.mjs migrate` only applies remote migrations.
-import { checkHopConfig, checkTeamDomain, checkTemplate, checkWranglerLogin, verifyDeployment } from './lib/checks.mjs';
+import { checkHopConfig, checkTeamDomain, checkTemplate, checkWranglerLogin, describeVerification, verifyDeployment } from './lib/checks.mjs';
 import { accountEnv, bold, fail, heading, readHopConfig, readTemplate, run, wrangler, writeDeployConfig } from './lib/cli.mjs';
 
 const migrateOnly = process.argv[2] === 'migrate';
@@ -49,7 +49,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       await applyMigrations(config, writeDeployConfig(config));
     } else {
       const result = await deploy(config);
-      console.log(`\n${bold(result === 'fail' ? 'Deployed, but the live checks found problems (see above).' : `Hop is live at https://${config.shortDomain}/admin`)}`);
+      console.log(`\n${bold(describeVerification(result, config))}`);
       process.exit(result === 'fail' ? 1 : 0);
     }
   } catch (err) {

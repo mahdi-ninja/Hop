@@ -10,7 +10,10 @@ if (results[0] === 'ok') {
   results.push(await checkWranglerLogin(config));
   results.push(await checkTeamDomain(config.access.teamDomain));
   if (results.at(-2) === 'ok') results.push(await checkRemoteMigrations(config, writeDeployConfig(config)));
-  if (live) results.push(await verifyDeployment(config, { waitSeconds: 0 }));
+  if (live) {
+    const liveResult = await verifyDeployment(config, { waitSeconds: 0, askToKeepWaiting: false });
+    results.push(liveResult === 'pending' ? 'warn' : liveResult);
+  }
 }
 
 const failed = results.filter((r) => r === 'fail').length;
