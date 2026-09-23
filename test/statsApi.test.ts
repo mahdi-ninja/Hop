@@ -72,7 +72,7 @@ describe('GET /api/stats/overview', () => {
       totalLinks: 1,
       totalVisits: 1,
       perDay: [{ day: '2026-09-28', visits: 1 }],
-      topLinks: [{ slug: 'alpha', title: 'Alpha', visits: 1 }],
+      topLinks: [{ slug: 'alpha', shortUrl: 'https://go.example.com/alpha', title: 'Alpha', visits: 1 }],
     });
   });
 

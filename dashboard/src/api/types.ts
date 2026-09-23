@@ -64,5 +64,5 @@ export interface Overview {
   totalLinks: number;
   totalVisits: number;
   perDay: DayCount[];
-  topLinks: { slug: string; title: string | null; visits: number }[];
+  topLinks: { slug: string; shortUrl: string; title: string | null; visits: number }[];
 }

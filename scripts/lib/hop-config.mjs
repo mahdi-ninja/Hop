@@ -16,6 +16,7 @@ export function isPlaceholder(value) {
     value.trim() === '' ||
     value.includes('your-') ||
     value.includes('example.com') ||
+    /(^|\.)localhost(:\d+)?$/.test(value) ||
     value === '00000000-0000-0000-0000-000000000000'
   );
 }

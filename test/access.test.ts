@@ -80,8 +80,9 @@ describe('DevIdentityProvider', () => {
 
   it('uses the dev email on localhost', async () => {
     const dev = new DevIdentityProvider(deny, 'dev@example.com');
-    expect(await dev.identify(new Request('http://localhost:8787/api/me'))).toEqual({ email: 'dev@example.com' });
+    expect(await dev.identify(new Request('http://localhost:4696/api/me'))).toEqual({ email: 'dev@example.com' });
     expect(await dev.identify(new Request('http://127.0.0.1/api/me'))).toEqual({ email: 'dev@example.com' });
+    expect(await dev.identify(new Request('http://go.localhost:4696/api/me'))).toEqual({ email: 'dev@example.com' });
   });
 
   it('ignores the bypass on non-localhost hosts', async () => {
@@ -91,11 +92,12 @@ describe('DevIdentityProvider', () => {
       await dev.identify(new Request('https://go.example.com/api/me', { headers: { Host: 'localhost' } })),
     ).toBeNull();
     expect(await dev.identify(new Request('https://localhost.evil.com/api/me'))).toBeNull();
+    expect(await dev.identify(new Request('https://go.localhost.example.com/api/me'))).toBeNull();
   });
 
   it('does nothing without a dev email', async () => {
     const dev = new DevIdentityProvider(deny, undefined);
-    expect(await dev.identify(new Request('http://localhost:8787/api/me'))).toBeNull();
+    expect(await dev.identify(new Request('http://localhost:4696/api/me'))).toBeNull();
   });
 
   it('delegates to the real provider otherwise', async () => {

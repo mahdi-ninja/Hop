@@ -8,7 +8,7 @@ import { parseBotsFlag, parseRangeName, resolveRange } from '../lib/range';
 import { validateRules } from '../lib/routing';
 import { checkCustomSlug, generateSlug, isValidSlugFormat } from '../lib/slug';
 import { fillTitle, MAX_TITLE_LENGTH } from '../lib/title';
-import { validateTargetUrl } from '../lib/url';
+import { shortOrigin, validateTargetUrl } from '../lib/url';
 import { requireIdentity } from '../middleware/auth';
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -22,7 +22,7 @@ type ApiContext = Context<AppEnv>;
 function toApiLink(link: Link, shortDomain: string) {
   return {
     slug: link.slug,
-    shortUrl: `https://${shortDomain}/${link.slug}`,
+    shortUrl: `${shortOrigin(shortDomain)}/${link.slug}`,
     url: link.url,
     title: link.title,
     visitCount: link.visitCount,
@@ -214,8 +214,12 @@ export function apiRoutes(): Hono<AppEnv> {
     if (rangeName === null) return apiError(c, 'INVALID_INPUT', 'range must be one of 7d, 30d, 90d, all.');
     if (includeBots === null) return apiError(c, 'INVALID_INPUT', 'bots must be 0 or 1.');
 
-    const range = resolveRange(rangeName, Date.now(), 0);
-    return c.json(await c.get('services').visits.overview(range, includeBots));
+    const { visits, config } = c.get('services');
+    const overview = await visits.overview(resolveRange(rangeName, Date.now(), 0), includeBots);
+    return c.json({
+      ...overview,
+      topLinks: overview.topLinks.map((l) => ({ ...l, shortUrl: `${shortOrigin(config.shortDomain)}/${l.slug}` })),
+    });
   });
 
   api.all('*', (c) => apiError(c, 'NOT_FOUND', 'Not found.'));

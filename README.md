@@ -21,17 +21,23 @@ npm install                      # root + dashboard (npm workspace)
 cp .dev.vars.example .dev.vars   # sets DEV_AUTH_EMAIL for the localhost-only auth bypass
 npm run db:migrate:local         # create the local D1 schema
 npm run db:seed:local            # optional: demo links and visits
-npm run dev                      # builds the dashboard, then http://localhost:8787/admin
+npm run dev                      # builds the dashboard, then http://go.localhost:4696/admin
 ```
 
 For dashboard work with hot reload, keep `npm run dev` running and start
-`npm run dev:dashboard` (Vite on http://localhost:5173/admin/, proxying `/api` to :8787).
+`npm run dev:dashboard` (Vite on http://go.localhost:4697/admin/, proxying `/api` to the Worker).
+
+Locally, short links live on `go.localhost:4696`, so the links the dashboard shows and copies
+actually work: `http://go.localhost:4696/<slug>` redirects through your local Worker. Browsers
+and macOS send any `*.localhost` name to your own machine, so there's nothing to configure.
+The ports (4696 for the Worker, 4697 for Vite) are unassigned by IANA, so they're unlikely to
+clash with other tools. To change the Worker port, edit `dev.port`, `dev.host` and
+`SHORT_DOMAIN` in `wrangler.jsonc` together (a test checks they match).
 
 Locally, Access isn't in the loop: when `DEV_AUTH_EMAIL` is set **and** the request is
-addressed to `localhost`/`127.0.0.1`, the Worker uses that email instead of verifying a JWT.
-`wrangler.jsonc` sets `dev.host` to `localhost` so the Worker sees `localhost` as its host
-under `wrangler dev` (otherwise wrangler rewrites it to the production route). Never put
-`DEV_AUTH_EMAIL` in `wrangler.jsonc`.
+addressed to `localhost`, a `*.localhost` name or `127.0.0.1`, the Worker uses that email instead
+of verifying a JWT. Cloudflare only routes your real domain to the deployed Worker, so a
+production request can never look local. Never put `DEV_AUTH_EMAIL` in `wrangler.jsonc`.
 
 ## Deploy
 
@@ -48,8 +54,8 @@ does, the Access options, and a manual fallback.
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Build the dashboard into `public/admin`, then run the Worker via `wrangler dev` |
-| `npm run dev:dashboard` | Vite dev server with hot reload (proxies `/api` to the Worker on :8787) |
+| `npm run dev` | Build the dashboard into `public/admin`, then run the Worker on http://go.localhost:4696 |
+| `npm run dev:dashboard` | Vite dev server with hot reload on :4697 (proxies `/api` to the Worker on :4696) |
 | `npm run build:dashboard` | Build the dashboard only |
 | `npm run typecheck` | `tsc` for the Worker and the dashboard |
 | `npm test` | Portability boundary check, then Vitest in the Workers runtime |

@@ -47,6 +47,12 @@ describe('POST /api/links', () => {
     expect(json.createdAt).toEqual(expect.any(Number));
   });
 
+  it('builds http short URLs for a local short domain', async () => {
+    services.config = { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, accessConfigured: true };
+    const { json } = await create({ url: 'https://example.com/', slug: 'local' });
+    expect(json.shortUrl).toBe('http://go.localhost:4696/local');
+  });
+
   it('creates a link with a custom slug', async () => {
     const { res, json } = await create({ url: 'https://example.com/', slug: 'Launch_2026' });
     expect(res.status).toBe(201);

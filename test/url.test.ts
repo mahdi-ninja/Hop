@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeQuery, validateTargetUrl } from '../src/lib/url';
+import { isLocalHostname, mergeQuery, shortOrigin, validateTargetUrl } from '../src/lib/url';
 
 const SHORT = 'go.example.com';
 
@@ -44,6 +44,24 @@ describe('validateTargetUrl', () => {
   it('allows other subdomains of the same parent', () => {
     expect(validateTargetUrl('https://example.com/', SHORT)).not.toBeNull();
     expect(validateTargetUrl('https://www.go.example.com/', SHORT)).not.toBeNull();
+  });
+});
+
+describe('local short domains', () => {
+  it('recognizes local hostnames', () => {
+    for (const host of ['localhost', 'go.localhost', 'GO.LOCALHOST.', '127.0.0.1', '[::1]']) expect(isLocalHostname(host), host).toBe(true);
+    for (const host of ['go.example.com', 'localhost.evil.com', 'evil-localhost', 'mylocalhost']) expect(isLocalHostname(host), host).toBe(false);
+  });
+
+  it('uses http for local short domains and https otherwise', () => {
+    expect(shortOrigin('go.localhost:4696')).toBe('http://go.localhost:4696');
+    expect(shortOrigin('go.example.com')).toBe('https://go.example.com');
+  });
+
+  it('rejects links to the local short domain, with or without the port', () => {
+    expect(validateTargetUrl('http://go.localhost:4696/abc', 'go.localhost:4696')).toBeNull();
+    expect(validateTargetUrl('http://go.localhost/abc', 'go.localhost:4696')).toBeNull();
+    expect(validateTargetUrl('http://other.localhost:4696/abc', 'go.localhost:4696')).not.toBeNull();
   });
 });
 

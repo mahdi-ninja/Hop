@@ -5,8 +5,11 @@
   "compatibility_date": "2026-08-22",
   "workers_dev": false,
   "preview_urls": false,
-  "dev": { "host": "localhost" },
-  "routes": [{ "pattern": "go.example.com", "custom_domain": true }],
+  // Local dev runs at http://go.localhost:4696. dev.host makes the Worker see that host (port
+  // included) even when opened as localhost:4696; keep it equal to SHORT_DOMAIN below.
+  "dev": { "host": "go.localhost:4696", "port": 4696 },
+  // Replaced from hop.config.json by `npm run deploy`; a bare `wrangler deploy` fails on it.
+  "routes": [{ "pattern": "go.localhost", "custom_domain": true }],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
@@ -21,7 +24,7 @@
     }
   ],
   "vars": {
-    "SHORT_DOMAIN": "go.example.com",
+    "SHORT_DOMAIN": "go.localhost:4696",
     "ACCESS_TEAM_DOMAIN": "https://your-team.cloudflareaccess.com",
     "ACCESS_AUD": "your-access-application-aud-tag",
     "ROOT_REDIRECT_URL": ""

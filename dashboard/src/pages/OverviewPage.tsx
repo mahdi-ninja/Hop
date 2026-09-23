@@ -96,8 +96,7 @@ export function OverviewPage() {
                             <div className="h-2 rounded-full bg-accent" style={{ width: `${(link.visits / topMax) * 100}%` }} />
                           </div>
                         </div>
-                        {/* The dashboard is served from the short domain, so its origin is the short-link origin. */}
-                        <CopyButton text={`${window.location.origin}/${link.slug}`} />
+                        <CopyButton text={link.shortUrl} />
                       </li>
                     ))}
                   </ol>

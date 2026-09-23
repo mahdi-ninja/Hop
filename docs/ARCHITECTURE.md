@@ -237,12 +237,14 @@ implementation, `adapters/cloudflare/access.ts` (`AccessIdentityProvider`):
 4. The middleware turns `null` into `401` JSON for `/api`, plain `401` for `/admin`.
 
 **Local dev bypass** (`adapters/dev/devIdentity.ts`, wrapping the Access provider): if `DEV_AUTH_EMAIL` is set (only in `.dev.vars`) AND the request
-hostname is `localhost` or `127.0.0.1`, skip verification and use that email.
+hostname is `localhost`, a `*.localhost` name or `127.0.0.1`, skip verification and use that email.
 Both conditions required. Never set `DEV_AUTH_EMAIL` in `wrangler.jsonc`.
 
 **CSRF** (in `middleware/auth.ts`, runtime-agnostic): the Access cookie is sent automatically by browsers, so for `POST`/`PATCH`/`DELETE`
 on `/api/*` require `Content-Type: application/json` (except DELETE) and reject requests
-whose `Origin` header is present and not `https://${SHORT_DOMAIN}` (allow localhost in dev).
+whose `Origin` header is present and not the short-link origin (`https://${SHORT_DOMAIN}`, or
+`http://` for a `*.localhost` domain); in dev, other local origins are allowed when the request
+itself is to a local host.
 
 ## Visit capture (`lib/visit.ts`)
 - `country`, `region`, `city` from `services.geo.lookup(req)`. The Cloudflare
@@ -290,5 +292,8 @@ All filtered by `slug` (per-link) or not (overview), by `ts >= from AND ts < to`
 - Vite `base: '/admin/'`; client-side routing under `/admin` (react-router).
 - Pages: `/admin` (overview), `/admin/links` (list + search + create), `/admin/links/:slug` (detail: edit, stats, QR, delete).
 - Fetch the current user from `GET /api/me` to show "Signed in as …" in the header.
-- In dev, Vite proxies `/api` to `http://localhost:8787`.
+- Local dev: the Worker runs at `http://go.localhost:4696` (`SHORT_DOMAIN` and `dev.host` in
+  `wrangler.jsonc`), so short URLs work locally; Vite runs on `:4697` (strict port) and proxies
+  `/api` to the Worker port it reads from `wrangler.jsonc`. Short URLs use `http://` only for
+  `localhost`/`*.localhost` domains.
 - Light/dark via `prefers-color-scheme` plus a manual toggle.

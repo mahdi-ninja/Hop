@@ -112,6 +112,6 @@ Most recent visits, newest first (respects `bots` param like stats).
   "totalLinks": 57,
   "totalVisits": 1830,
   "perDay": [{ "day": "2026-09-01", "visits": 70 }],
-  "topLinks": [{ "slug": "abc123x", "title": "Example page", "visits": 400 }]
+  "topLinks": [{ "slug": "abc123x", "shortUrl": "https://go.example.com/abc123x", "title": "Example page", "visits": 400 }]
 }
 ```

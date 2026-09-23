@@ -68,7 +68,7 @@ describe('CSRF checks', () => {
   it('rejects localhost origins on the production host', async () => {
     const res = await request('/api/links', {
       method: 'POST',
-      headers: authed({ ...json, Origin: 'http://localhost:5173' }),
+      headers: authed({ ...json, Origin: 'http://localhost:4697' }),
       body: '{}',
     });
     expect(res.status).toBe(403);
@@ -77,10 +77,25 @@ describe('CSRF checks', () => {
   it('allows localhost origins when the request is to localhost', async () => {
     const res = await request(
       '/api/unknown',
-      { method: 'POST', headers: authed({ ...json, Origin: 'http://localhost:5173' }), body: '{}' },
-      'http://localhost:8787',
+      { method: 'POST', headers: authed({ ...json, Origin: 'http://localhost:4697' }), body: '{}' },
+      'http://localhost:4696',
     );
     expect(res.status).toBe(404);
+  });
+
+  it('allows another local port when the request is to a *.localhost short domain', async () => {
+    const services = createFakeServices({
+      identity: tokenIdentity,
+      config: { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, accessConfigured: true },
+    });
+    for (const origin of ['http://go.localhost:4696', 'http://go.localhost:4697']) {
+      const res = await app.request(
+        'http://go.localhost:4696/api/unknown',
+        { method: 'POST', headers: authed({ ...json, Origin: origin }), body: '{}' },
+        { services },
+      );
+      expect(res.status, origin).toBe(404);
+    }
   });
 
   it('allows the short domain origin and requests without Origin', async () => {

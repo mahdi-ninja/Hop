@@ -44,6 +44,8 @@ describe('normalizers', () => {
     expect(isPlaceholder('your-access-application-aud-tag')).toBe(true);
     expect(isPlaceholder('go.example.com')).toBe(true);
     expect(isPlaceholder('00000000-0000-0000-0000-000000000000')).toBe(true);
+    expect(isPlaceholder('go.localhost:4696')).toBe(true);
+    expect(isPlaceholder('localhost')).toBe(true);
     expect(isPlaceholder('go.acme.test')).toBe(false);
   });
 });
@@ -51,6 +53,10 @@ describe('normalizers', () => {
 describe('validateHopConfig', () => {
   it('accepts a complete config', () => {
     expect(validateHopConfig(valid)).toEqual([]);
+  });
+
+  it('rejects the local dev domain as a production domain', () => {
+    expect(validateHopConfig({ ...valid, shortDomain: 'go.localhost' })).toHaveLength(1);
   });
 
   it('reports each missing or placeholder value', () => {

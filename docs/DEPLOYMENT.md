@@ -11,7 +11,9 @@ should prompt for these and wait, rather than guessing values.
   Settings → Authentication if you want them.)
 
 ## Where deployment settings live
-- `wrangler.jsonc` is a **committed template** with placeholders. Local dev and tests use it as is.
+- `wrangler.jsonc` is a **committed template**. Its values work for local dev
+  (`go.localhost:4696`) and are treated as placeholders for production: `setup` and `doctor`
+  never accept a `localhost` or `*.localhost` domain.
 - `hop.config.json` (git-ignored) holds your deployment's values: account ID, domain, D1
   database, Access team domain and AUD, root redirect URL. `npm run setup` writes it.
   It contains no secrets, but keep a copy somewhere safe: it identifies your deployment.

@@ -1,17 +1,17 @@
 import type { MiddlewareHandler } from 'hono';
 import type { AppEnv } from '../core/services';
 import { apiError } from '../lib/errors';
+import { isLocalHostname, shortOrigin } from '../lib/url';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
 
 function isAllowedOrigin(origin: string, requestUrl: string, shortDomain: string): boolean {
-  if (origin === `https://${shortDomain}`) return true;
-  // Local dev: the dashboard may be served from another localhost port (Vite), but only
-  // when the request itself is addressed to localhost, which never happens in production.
-  if (!LOCAL_HOSTNAMES.has(new URL(requestUrl).hostname)) return false;
+  if (origin === shortOrigin(shortDomain)) return true;
+  // Local dev: the dashboard may be served from another local port (Vite), but only when the
+  // request itself is addressed to a local host, which Cloudflare never routes in production.
+  if (!isLocalHostname(new URL(requestUrl).hostname)) return false;
   try {
-    return LOCAL_HOSTNAMES.has(new URL(origin).hostname);
+    return isLocalHostname(new URL(origin).hostname);
   } catch {
     return false;
   }
