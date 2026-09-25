@@ -50,9 +50,12 @@ export class AccessIdentityProvider implements IdentityProvider {
       const { payload } = await jwtVerify(token, this.keys, {
         issuer: this.teamDomain,
         audience: this.audience,
+        algorithms: ['RS256'],
       });
       return typeof payload.email === 'string' && payload.email ? { email: payload.email } : null;
-    } catch {
+    } catch (err) {
+      // Only the error code: a wrong AUD or team domain shows up in logs without leaking the token.
+      console.warn('Access token rejected', { code: (err as { code?: string }).code ?? 'unknown' });
       return null;
     }
   }

@@ -61,6 +61,19 @@ describe('AccessIdentityProvider', () => {
     expect(await provider.identify(withHeader(await sign({}, { iss: 'https://evil.cloudflareaccess.com' })))).toBeNull();
   });
 
+  it('rejects tokens signed with another algorithm, even with a trusted key', async () => {
+    const ec = await generateKeyPair('ES256');
+    const keys = createLocalJWKSet({ keys: [{ ...(await exportJWK(ec.publicKey)), kid: 'ec1', alg: 'ES256' }] });
+    const esProvider = new AccessIdentityProvider({ teamDomain: TEAM, audience: AUD, keys });
+    const token = await new SignJWT({ email: 'alice@example.com' })
+      .setProtectedHeader({ alg: 'ES256', kid: 'ec1' })
+      .setIssuer(TEAM)
+      .setAudience(AUD)
+      .setExpirationTime('1h')
+      .sign(ec.privateKey);
+    expect(await esProvider.identify(withHeader(token))).toBeNull();
+  });
+
   it('rejects expired tokens', async () => {
     expect(await provider.identify(withHeader(await sign({}, { exp: '-1m' })))).toBeNull();
   });
@@ -93,6 +106,11 @@ describe('DevIdentityProvider', () => {
     ).toBeNull();
     expect(await dev.identify(new Request('https://localhost.evil.com/api/me'))).toBeNull();
     expect(await dev.identify(new Request('https://go.localhost.example.com/api/me'))).toBeNull();
+  });
+
+  it('ignores the bypass for a DNS-rebinding host that resolves to 127.0.0.1', async () => {
+    const dev = new DevIdentityProvider(deny, 'dev@example.com');
+    expect(await dev.identify(new Request('http://attacker.example:4696/api/links'))).toBeNull();
   });
 
   it('does nothing without a dev email', async () => {

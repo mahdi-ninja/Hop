@@ -38,6 +38,7 @@ describe('requireIdentity', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ email: 'alice@example.com' });
     expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
   });
 
   it('returns JSON 404 for unknown API routes when authenticated', async () => {

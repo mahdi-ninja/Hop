@@ -5,6 +5,8 @@ import { isLocalHostname } from '../../lib/url';
 /**
  * Local-development bypass: uses devEmail without verification, but only when devEmail is set
  * AND the request is addressed to localhost or a *.localhost name. Both conditions are required.
+ * This relies on the Worker seeing the real Host header, which is why wrangler.jsonc sets no
+ * dev.host: a DNS-rebinding page (attacker.example → 127.0.0.1) then arrives as attacker.example.
  */
 export class DevIdentityProvider implements IdentityProvider {
   constructor(

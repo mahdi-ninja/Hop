@@ -86,6 +86,9 @@ export function accessAppBody({ shortDomain, allowed, sessionDuration }) {
     ],
     session_duration: sessionDuration,
     app_launcher_visible: false,
+    // A Lax, HttpOnly sign-in cookie isn't sent inside another site's frames or readable by scripts.
+    same_site_cookie_attribute: 'lax',
+    http_only_cookie_attribute: true,
     policies: [{ name: 'Hop team', decision: 'allow', include: includeRules(allowed) }],
   };
 }

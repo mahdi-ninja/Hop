@@ -3,16 +3,21 @@ import wranglerSource from '../wrangler.jsonc?raw';
 import { parseJsonc } from '../scripts/lib/hop-config.mjs';
 
 const wrangler = parseJsonc(wranglerSource) as {
-  dev: { host: string; port: number };
+  dev: { host?: string; port: number };
+  routes?: unknown;
   vars: { SHORT_DOMAIN: string };
   workers_dev: boolean;
   preview_urls: boolean;
 };
 
 describe('wrangler.jsonc template', () => {
-  it('keeps the local short domain, dev host and dev port in step', () => {
-    expect(wrangler.dev.host).toBe(`go.localhost:${wrangler.dev.port}`);
-    expect(wrangler.vars.SHORT_DOMAIN).toBe(wrangler.dev.host);
+  it('keeps the local short domain and dev port in step', () => {
+    expect(wrangler.vars.SHORT_DOMAIN).toBe(`go.localhost:${wrangler.dev.port}`);
+  });
+
+  it('sets no dev.host or route, so the Worker sees the real Host header locally', () => {
+    expect(wrangler.dev.host).toBeUndefined();
+    expect(wrangler.routes).toBeUndefined();
   });
 
   it('never exposes the Worker on workers.dev or preview URLs', () => {

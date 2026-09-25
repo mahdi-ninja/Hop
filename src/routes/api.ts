@@ -10,6 +10,7 @@ import { checkCustomSlug, generateSlug, isValidSlugFormat } from '../lib/slug';
 import { fillTitle, MAX_TITLE_LENGTH } from '../lib/title';
 import { shortOrigin, validateTargetUrl } from '../lib/url';
 import { requireIdentity } from '../middleware/auth';
+import { DASHBOARD_SECURITY_HEADERS } from './admin';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
@@ -75,6 +76,7 @@ export function apiRoutes(): Hono<AppEnv> {
   api.use(async (c, next) => {
     await next();
     c.header('Cache-Control', 'private, no-store');
+    for (const [name, value] of Object.entries(DASHBOARD_SECURITY_HEADERS)) c.header(name, value);
   });
   api.use(requireIdentity('api'));
 

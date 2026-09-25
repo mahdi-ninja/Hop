@@ -37,6 +37,9 @@ describe('/admin', () => {
   it('serves static assets', async () => {
     const res = await request('/admin/assets/index.js');
     expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Security-Policy')).toBe("frame-ancestors 'none'");
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(await res.text()).toBe('console.log(1)');
   });
 
@@ -44,6 +47,7 @@ describe('/admin', () => {
     for (const path of ['/admin/links', '/admin/links/abc123']) {
       const res = await request(path);
       expect(res.status, path).toBe(200);
+      expect(res.headers.get('X-Frame-Options'), path).toBe('DENY');
       expect(await res.text()).toContain('id="root"');
     }
   });
