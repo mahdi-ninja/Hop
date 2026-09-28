@@ -56,9 +56,13 @@ React dashboard served as static assets, and Cloudflare Access for sign-in.
 ## Deploy your own
 
 You need:
-- a Cloudflare account (the free plan is enough) with your domain added as a zone
-- Zero Trust enabled once, to pick a team name (free for up to 50 users)
+- a Cloudflare account on the free plan, with a verified email
+- your own domain added to it, **or** a free `workers.dev` address for trying Hop out
+- Zero Trust turned on once (free for up to 50 users; Cloudflare asks for a payment method)
 - Node.js 22.22+, 24 or 26 (see `.nvmrc`)
+
+New to Cloudflare? Follow the step-by-step [Cloudflare checklist](docs/CLOUDFLARE-CHECKLIST.md)
+first: it covers each of these, plus your team's login method, with links to Cloudflare's guides.
 
 ```sh
 git clone <this repo> hop && cd hop
@@ -67,7 +71,7 @@ npm run setup
 ```
 
 `npm run setup` walks you through each step and asks before changing anything: your Cloudflare
-account, the short-link domain, the database (reuse or create), and Cloudflare Access (set up
+account, where short links live (your domain or `workers.dev`), the database (reuse or create), and Cloudflare Access (set up
 automatically with an API token, or guided through the dashboard). It then deploys and checks
 that short links are public and the dashboard is behind your login.
 
@@ -149,6 +153,7 @@ roles. See the non-goals in [docs/SPEC.md](docs/SPEC.md).
 - [Architecture](docs/ARCHITECTURE.md): code layout, data model, auth, request flow
 - [API](docs/API.md): the dashboard's JSON API
 - [Deployment](docs/DEPLOYMENT.md): setup, deploys, checks
+- [Cloudflare checklist](docs/CLOUDFLARE-CHECKLIST.md): account, domain, Zero Trust and login setup for newcomers
 
 ## Contributing
 

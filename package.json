@@ -43,7 +43,7 @@
     "@types/ua-parser-js": "^0.7.39",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11",
-    "wrangler": "^4.142.0"
+    "wrangler": "^4.143.0"
   },
   "allowScripts": {
     "workerd@1.20260815.1": true,

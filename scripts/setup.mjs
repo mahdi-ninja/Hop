@@ -3,6 +3,7 @@
 import { checkRemoteMigrations, checkTeamDomain, describeVerification } from './lib/checks.mjs';
 import {
   ACCEPT_DEFAULTS,
+  HOP_TOKEN_ENV,
   accountEnv,
   ask,
   askSecret,
@@ -22,21 +23,27 @@ import {
   wranglerJson,
   writeDeployConfig,
   writeHopConfig,
+  wranglerTokenOverrideHint,
 } from './lib/cli.mjs';
-import { accessAppBody, createApi, findHopApp, protectedPaths } from './lib/cloudflare-api.mjs';
+import { accessAppBody, createApi, findHopApp, protectedPaths, teamCanSignIn } from './lib/cloudflare-api.mjs';
 import { applyMigrations, deploy } from './deploy.mjs';
 import {
   HOP_CONFIG_FILE,
   isPlaceholder,
   isValidAud,
   isValidHostname,
+  isWorkersDevHost,
   normalizeHostname,
   normalizeTeamDomain,
   validateHopConfig,
+  workersDevHost,
 } from './lib/hop-config.mjs';
 
 const TOKEN_URL = 'https://dash.cloudflare.com/profile/api-tokens';
-const ZERO_TRUST_URL = 'https://one.dash.cloudflare.com/';
+const DASHBOARD_URL = 'https://dash.cloudflare.com/';
+const CHECKLIST = 'docs/CLOUDFLARE-CHECKLIST.md';
+const WORKERS_DEV_HINT = 'Cloudflare dashboard → Workers & Pages, shown as "Your subdomain"';
+const IDENTITY_PROVIDERS_PATH = 'Zero Trust → Integrations → Identity providers → Add new identity provider';
 
 const LOCATIONS = [
   { value: '', label: 'Automatic', hint: 'near where you create it' },
@@ -59,7 +66,12 @@ const short = (id) => `${id.slice(0, 8)}…`;
 
 async function stepLogin() {
   heading(1, 'Cloudflare account');
+  const override = wranglerTokenOverrideHint();
+  if (override) warn(override);
   let me = await wranglerJson(['whoami']).catch(() => ({ loggedIn: false }));
+  if (!me.loggedIn && override) {
+    throw new Error('Wrangler can\'t use the token in CLOUDFLARE_API_TOKEN. Unset it (`unset CLOUDFLARE_API_TOKEN`) and run setup again.');
+  }
   if (!me.loggedIn) {
     warn('Wrangler is not logged in to Cloudflare.');
     if (!(await confirm('Log in now? This opens your browser.', true))) throw new Error('Setup needs a Cloudflare login.');
@@ -86,17 +98,78 @@ async function stepAccount(me, previous) {
   );
 }
 
-async function stepDomain(previous) {
-  heading(2, 'Short-link domain');
-  info('Short links will look like https://<domain>/<slug>. The domain must be a zone in this Cloudflare account.');
+async function stepCustomDomain(previous) {
+  info('Short links will look like https://<domain>/<slug>. The domain must be active in this Cloudflare account.');
   info('Wrangler creates the DNS record and certificate on deploy. Remove any existing DNS record for that exact name first.');
   const template = readTemplate();
   const fromTemplate = isPlaceholder(template.vars?.SHORT_DOMAIN) ? '' : template.vars.SHORT_DOMAIN;
+  const previousCustom = previous?.shortDomain && !isWorkersDevHost(previous.shortDomain) ? previous.shortDomain : '';
   const domain = await ask('Domain:', {
-    default: previous?.shortDomain || fromTemplate,
-    validate: (answer) => (isValidHostname(normalizeHostname(answer)) ? null : 'Enter a hostname like go.yourcompany.com.'),
+    default: previousCustom || fromTemplate,
+    validate: (answer) => {
+      const host = normalizeHostname(answer);
+      if (isWorkersDevHost(host)) return 'That is a workers.dev address; pick the workers.dev option instead.';
+      return isValidHostname(host) ? null : 'Enter a hostname like go.yourcompany.com.';
+    },
   });
   return normalizeHostname(domain);
+}
+
+async function stepWorkersDev(accountId, previous) {
+  const workerName = readTemplate().name;
+  warn('Links on workers.dev are tied to this Cloudflare account: changing its subdomain or moving accounts breaks every');
+  warn('shared link and QR code. Some email filters and company networks also block workers.dev. Fine for trying Hop;');
+  warn('use your own domain for links you print or share widely.');
+  info('Setup needs your API token now, to look up this account\'s workers.dev address (and later to set up Access).');
+
+  for (;;) {
+    const api = createApi(await getToken({ workersDev: true }));
+    let subdomain;
+    try {
+      subdomain = await api.getWorkersSubdomain(accountId);
+    } catch (err) {
+      if (err?.status === 403) {
+        fail('That token works, but it can\'t read the workers.dev subdomain.');
+        info('Add Account · Workers Scripts · Read to it (or create a new one with all the permissions above).');
+      } else {
+        fail(`Cloudflare rejected that token (${err.message}). Check it was copied fully and is still active.`);
+      }
+      forgetToken();
+      const next = await choose('Then:', [
+        { value: 'retry', label: 'Paste a different token' },
+        { value: 'custom', label: 'Use my own domain instead' },
+      ]);
+      if (next === 'custom') return stepCustomDomain(previous);
+      continue;
+    }
+    if (!subdomain) {
+      warn(`This account has no workers.dev subdomain yet. Pick one in the dashboard: ${WORKERS_DEV_HINT} → Change.`);
+      const next = await choose('Then:', [
+        { value: 'retry', label: "I've picked one, check again" },
+        { value: 'custom', label: 'Use my own domain instead' },
+      ]);
+      if (next === 'custom') return stepCustomDomain(previous);
+      continue;
+    }
+    const host = workersDevHost(workerName, subdomain);
+    ok(`This account's workers.dev subdomain is ${subdomain}.`);
+    info(`Short links will look like https://${host}/<slug>.`);
+    if (await confirm('Use this address?', true)) return host;
+    return stepDomain(accountId, previous);
+  }
+}
+
+async function stepDomain(accountId, previous) {
+  heading(2, 'Short-link domain');
+  const kind = await choose(
+    'Where should short links live?',
+    [
+      { value: 'custom', label: 'On my own domain', hint: 'recommended, e.g. go.yourcompany.com' },
+      { value: 'workers-dev', label: 'On a free workers.dev address', hint: 'no domain needed; best for trying Hop' },
+    ],
+    isWorkersDevHost(previous?.shortDomain) ? 1 : 0,
+  );
+  return kind === 'custom' ? stepCustomDomain(previous) : stepWorkersDev(accountId, previous);
 }
 
 async function stepRootRedirect(previous) {
@@ -176,16 +249,31 @@ async function stepDatabase(accountId, previous) {
   return { name: db.name, id: db.uuid };
 }
 
-async function getToken() {
-  if (process.env.CLOUDFLARE_API_TOKEN && (await confirm('Use the API token in $CLOUDFLARE_API_TOKEN?', true))) {
-    return process.env.CLOUDFLARE_API_TOKEN;
+// The token is asked for once per run: the workers.dev lookup and the Access step share it.
+let cachedToken = null;
+
+function forgetToken() {
+  cachedToken = null;
+}
+
+async function getToken({ workersDev = false } = {}) {
+  if (cachedToken) return cachedToken;
+  if (process.env[HOP_TOKEN_ENV] && (await confirm(`Use the API token in $${HOP_TOKEN_ENV}?`, true))) {
+    cachedToken = process.env[HOP_TOKEN_ENV];
+    return cachedToken;
   }
-  console.log(`\n  Create a token at ${bold(TOKEN_URL)} → Create Token → Custom token, with:`);
-  console.log('    · Account › Access: Apps and Policies › Edit');
-  console.log('    · Account › Access: Organizations, Identity Providers, and Groups › Read');
-  console.log(dim('  It is used for this run only and never written to disk. You can delete it afterwards.\n'));
-  if (ACCEPT_DEFAULTS) throw new Error('Set CLOUDFLARE_API_TOKEN to use automatic Access setup with --yes.');
-  return askSecret('Paste the token (input is hidden):');
+  console.log(`\n  Create a token at ${bold(TOKEN_URL)} (My Profile → API Tokens) → Create Token → create a custom token, with:`);
+  console.log('    · Permissions: Account · Access: Apps and Policies · Edit');
+  console.log('    · Permissions: Account · Access: Organizations, Identity Providers, and Groups · Read');
+  if (workersDev) console.log('    · Permissions: Account · Workers Scripts · Read (to look up your workers.dev address)');
+  console.log('    · Account Resources: Include · this account');
+  console.log(dim(`  Step by step: ${CHECKLIST}, "API token".`));
+  console.log(dim(`  It is used for this run only and never written to disk. You can delete it afterwards.`));
+  console.log(dim(`  Tip: set ${HOP_TOKEN_ENV} before running setup to skip this prompt (not CLOUDFLARE_API_TOKEN,`));
+  console.log(dim('  which Wrangler would use instead of your login).\n'));
+  if (ACCEPT_DEFAULTS) throw new Error(`Set ${HOP_TOKEN_ENV} to use automatic Access setup with --yes.`);
+  cachedToken = await askSecret('Paste the token and press Enter (it stays hidden while you type):');
+  return cachedToken;
 }
 
 function defaultAllowed(me, previous) {
@@ -208,6 +296,20 @@ async function askWhoMaySignIn(me, previous) {
   return answer.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 }
 
+async function checkSignInMethods(api, accountId) {
+  try {
+    const providers = await api.listIdentityProviders(accountId);
+    if (teamCanSignIn(providers)) {
+      ok(`Login methods: ${providers.map((p) => p.name ?? p.type).join(', ')}.`);
+      return;
+    }
+    warn('Only members of your Cloudflare account can sign in right now (Cloudflare’s own login is the only method).');
+    warn(`To let teammates sign in with an emailed code, add One-time PIN: ${IDENTITY_PROVIDERS_PATH} → One-time PIN.`);
+  } catch {
+    info(`Couldn't read your login methods. Make sure your team can sign in: ${IDENTITY_PROVIDERS_PATH}.`);
+  }
+}
+
 async function stepAccessAutomatic(me, accountId, shortDomain, previous) {
   const api = createApi(await getToken());
   await api.verifyToken().catch(() => {
@@ -216,7 +318,8 @@ async function stepAccessAutomatic(me, accountId, shortDomain, previous) {
 
   let org = await api.getAccessOrganization(accountId);
   while (!org) {
-    warn(`Zero Trust isn't set up in this account yet. Open ${ZERO_TRUST_URL}, pick a team name, and come back.`);
+    warn(`Zero Trust isn't set up in this account yet. In ${DASHBOARD_URL} select Zero Trust, choose a team name and`);
+    warn(`the Free plan (a payment method is required, but Free isn't charged), then come back. See ${CHECKLIST}.`);
     const next = await choose('Then:', [
       { value: 'retry', label: "I've set it up, check again" },
       { value: 'manual', label: 'Switch to guided manual setup' },
@@ -226,6 +329,7 @@ async function stepAccessAutomatic(me, accountId, shortDomain, previous) {
   }
   const teamDomain = normalizeTeamDomain(org.auth_domain);
   ok(`Zero Trust team domain: ${teamDomain}`);
+  await checkSignInMethods(api, accountId);
 
   const existing = findHopApp(await api.listAccessApps(accountId), shortDomain);
   let action = 'create';
@@ -250,20 +354,29 @@ async function stepAccessAutomatic(me, accountId, shortDomain, previous) {
   }
   const app = action === 'update' ? await api.updateAccessApp(accountId, existing.id, body) : await api.createAccessApp(accountId, body);
   ok(`${action === 'update' ? 'Updated' : 'Created'} Access application "${app.name}".`);
-  info('One-time PIN by email works out of the box. Add Google or GitHub login under Zero Trust → Settings → Authentication.');
+  info(`Add or change login methods (One-time PIN, Google, GitHub) under ${IDENTITY_PROVIDERS_PATH}.`);
   return { teamDomain, aud: app.aud, appId: app.id, allowed };
 }
 
 async function stepAccessManual(shortDomain, previous) {
   const [adminPath, apiPath] = protectedPaths(shortDomain);
+  if (isWorkersDevHost(shortDomain)) {
+    warn('The dashboard may only offer domains from your zones, so it may not let you pick a workers.dev address.');
+    warn('If it doesn’t, run setup again and choose automatic Access setup, which works for workers.dev.');
+  }
   console.log(`
-  In ${bold(ZERO_TRUST_URL)}:
-    1. If this is your first time, pick a team name.
-    2. Access → Applications → Add an application → Self-hosted.
-    3. Add two destinations: ${bold(adminPath)} and ${bold(apiPath)}.
+  In the Cloudflare dashboard (${bold(DASHBOARD_URL)}), go to ${bold('Zero Trust')}:
+    1. First time? Choose a team name and the Free plan (a payment method is required; Free isn't charged).
+    2. ${bold('Integrations → Identity providers')}: make sure your team can sign in. New organizations only
+       allow members of your Cloudflare account; add ${bold('One-time PIN')} (email codes), Google or GitHub.
+    3. ${bold('Access controls → Applications → Create new application → Self-hosted and private')}.
+    4. ${bold('Add public hostname')} twice: ${bold(adminPath)} and ${bold(apiPath)} (domain, then path).
        Do ${bold('not')} add the bare domain; short links must stay public.
-    4. Add a policy: Action ${bold('Allow')}, include the emails or email domain of your team.
-    5. Save, then open the application's overview and copy the ${bold('Application Audience (AUD) tag')}.
+    5. Under Access policies, create a policy: Action ${bold('Allow')}, include ${bold('Emails ending in')} your
+       team's domain (e.g. @yourcompany.com) or ${bold('Emails')} for specific people. Then ${bold('Create')}.
+    6. Open the application → ${bold('Configure')} → ${bold('Additional settings')}, and copy the ${bold('Application Audience (AUD) Tag')}.
+       Under Cookie settings there, set SameSite to ${bold('Lax')} and keep HttpOnly on.
+  Your team domain is under ${bold('Zero Trust → Settings')}. Screens change; ${CHECKLIST} links Cloudflare's current guides.
 `);
   if (!ACCEPT_DEFAULTS) await ask('Press Enter when the application exists.', { default: 'done' });
 
@@ -316,7 +429,7 @@ async function main() {
   const saved = readHopConfig();
   let previous = saved;
   if (saved) {
-    const complete = validateHopConfig(saved).length === 0;
+    const complete = validateHopConfig(saved, { workerName: readTemplate().name }).length === 0;
     info(`Found ${HOP_CONFIG_FILE} for ${saved.shortDomain ?? 'an unfinished setup'}${complete ? '' : ' (incomplete)'}.`);
     const start = await choose(
       'What would you like to do?',
@@ -333,7 +446,7 @@ async function main() {
 
   const me = await stepLogin();
   const accountId = await stepAccount(me, previous);
-  const shortDomain = await stepDomain(previous);
+  const shortDomain = await stepDomain(accountId, previous);
   const rootRedirectUrl = await stepRootRedirect(previous);
   const database = await stepDatabase(accountId, previous);
   const access = await stepAccess(me, accountId, shortDomain, previous);
@@ -341,7 +454,7 @@ async function main() {
   const config = { accountId, shortDomain, rootRedirectUrl, database, access };
   heading(6, 'Review');
   printSummary(config);
-  const problems = validateHopConfig(config);
+  const problems = validateHopConfig(config, { workerName: readTemplate().name });
   if (problems.length) {
     problems.forEach((p) => fail(p));
     throw new Error('These settings are incomplete. Run setup again to fix them.');

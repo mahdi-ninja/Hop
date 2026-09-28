@@ -16,8 +16,8 @@ export async function deploy(cfg, { checks = true, firstStep = 1 } = {}) {
   let step = firstStep;
   if (checks) {
     heading(step++, 'Preflight checks');
-    const results = [checkHopConfig(cfg), checkTemplate(readTemplate())];
-    if (results[0] === 'ok') results.push(await checkWranglerLogin(cfg), await checkTeamDomain(cfg.access.teamDomain));
+    const results = [checkHopConfig(cfg), checkTemplate(readTemplate(), cfg)];
+    if (results[0] !== 'fail') results.push(await checkWranglerLogin(cfg), await checkTeamDomain(cfg.access.teamDomain));
     if (results.includes('fail')) {
       fail('Fix the problems above, or run `npm run setup` again.');
       process.exit(1);

@@ -45,9 +45,31 @@ export function createApi(token) {
       return apps;
     },
 
+    /** The account's `<subdomain>.workers.dev` name, or null if it hasn't registered one yet. */
+    async getWorkersSubdomain(accountId) {
+      try {
+        const result = await call('GET', `/accounts/${accountId}/workers/subdomain`);
+        return result?.subdomain || null;
+      } catch (err) {
+        if (err instanceof CloudflareApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+
+    listIdentityProviders: (accountId) => call('GET', `/accounts/${accountId}/access/identity_providers`),
+
     createAccessApp: (accountId, app) => call('POST', `/accounts/${accountId}/access/apps`, app),
     updateAccessApp: (accountId, appId, app) => call('PUT', `/accounts/${accountId}/access/apps/${appId}`, app),
   };
+}
+
+/**
+ * New Zero Trust organizations start with only Cloudflare's own identity provider, which lets in
+ * members of the Cloudflare account and nobody else. Any other provider (One-time PIN, Google,
+ * GitHub, …) means teammates without a Cloudflare login can sign in.
+ */
+export function teamCanSignIn(identityProviders) {
+  return identityProviders.some((idp) => !/cloudflare/i.test(String(idp.type ?? '')));
 }
 
 export function protectedPaths(shortDomain) {

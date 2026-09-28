@@ -38,9 +38,11 @@ function input() {
   if (rl) return rl;
   // Readline echoes typing to its output; routing that through this stream lets secrets go unechoed.
   const output = new Writable({
+    // Finish each write immediately: waiting for stdout's callback makes the stream queue later
+    // writes, and a prompt queued before `muted` flips would then be swallowed with the secret.
     write(chunk, encoding, done) {
-      if (!muted) return stdout.write(chunk, encoding, done);
-      if (String(chunk).includes('\n')) stdout.write('\n');
+      if (!muted) stdout.write(chunk, encoding);
+      else if (String(chunk).includes('\n')) stdout.write('\n');
       done();
     },
   });
@@ -143,7 +145,14 @@ export async function choose(question, choices, defaultIndex = 0) {
 
 /** Reads a line without echoing it, for API tokens. */
 export async function askSecret(question) {
-  return (await readLine(`${question} `, { secret: true })).trim();
+  for (;;) {
+    const secret = (await readLine(`${question} `, { secret: true })).trim();
+    if (secret) {
+      console.log(dim(`  Received (${secret.length} characters).`));
+      return secret;
+    }
+    console.log(red('  Nothing was entered. Paste the value and press Enter.'));
+  }
 }
 
 /** Runs a command. `capture` returns stdout; otherwise output streams to the terminal. */
@@ -197,6 +206,19 @@ export function writeDeployConfig(config) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(buildDeployConfig(readTemplate(), config), null, 2)}\n`);
   return DEPLOY_CONFIG_FILE;
+}
+
+/**
+ * Hop's Access token lives in its own variable: Wrangler treats CLOUDFLARE_API_TOKEN as its login,
+ * so an Access-only token there would break every Wrangler step.
+ */
+export const HOP_TOKEN_ENV = 'HOP_CLOUDFLARE_API_TOKEN';
+
+export function wranglerTokenOverrideHint() {
+  return process.env.CLOUDFLARE_API_TOKEN
+    ? `CLOUDFLARE_API_TOKEN is set, so Wrangler uses it instead of your login (it needs Workers and D1 permissions). ` +
+        `For Hop's Access token, unset it and use ${HOP_TOKEN_ENV} instead.`
+    : null;
 }
 
 /** Wrangler commands that target the account in hop.config.json without prompting for it. */

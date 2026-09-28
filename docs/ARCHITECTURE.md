@@ -171,7 +171,10 @@ AUD, root redirect). `npm run deploy` merges the two into `.wrangler/deploy/wran
 (`scripts/lib/hop-config.mjs`), rebasing relative paths, and deploys that file.
 
 `workers_dev: false` and `preview_urls: false` matter: they stop anyone reaching the Worker on
-a `*.workers.dev` or preview URL that isn't behind Access. `doctor` and a test check them.
+a `*.workers.dev` or preview URL that isn't behind Access. `doctor` and a test check them. The one
+exception is a deployment whose `shortDomain` is its own `hop.<subdomain>.workers.dev` address:
+the merged config then sets `workers_dev: true` and no custom-domain route, and the Access
+application covers `/admin` and `/api` on that hostname instead. Preview URLs stay off either way.
 
 When the Access values are missing or placeholders, `Config.accessConfigured` is false and
 `requireIdentity` answers `/admin` and `/api` with a 503 `NOT_CONFIGURED` instead of a bare 401

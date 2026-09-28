@@ -1,7 +1,7 @@
 import dns from 'node:dns/promises';
 import https from 'node:https';
-import { accountEnv, confirm, fail, info, ok, warn, wrangler, wranglerJson } from './cli.mjs';
-import { validateHopConfig } from './hop-config.mjs';
+import { accountEnv, confirm, fail, info, ok, readTemplate, warn, wrangler, wranglerJson, wranglerTokenOverrideHint } from './cli.mjs';
+import { isWorkersDevHost, validateHopConfig } from './hop-config.mjs';
 
 /** Each check logs its own result and returns 'ok' | 'warn' | 'fail'. */
 
@@ -10,16 +10,20 @@ export function checkHopConfig(config) {
     fail('No hop.config.json found. Run `npm run setup` first.');
     return 'fail';
   }
-  const problems = validateHopConfig(config);
+  const problems = validateHopConfig(config, { workerName: readTemplate().name });
   if (problems.length) {
     problems.forEach((p) => fail(`hop.config.json: ${p}`));
     return 'fail';
   }
   ok(`hop.config.json is complete (${config.shortDomain}).`);
+  if (isWorkersDevHost(config.shortDomain)) {
+    warn('Short links use a workers.dev address: they are tied to this account and some networks block workers.dev. See docs/DEPLOYMENT.md.');
+    return 'warn';
+  }
   return 'ok';
 }
 
-export function checkTemplate(template) {
+export function checkTemplate(template, config) {
   let result = 'ok';
   if (template.workers_dev !== false) {
     fail('wrangler.jsonc must set "workers_dev": false, or the Worker is reachable on workers.dev without Access.');
@@ -29,7 +33,13 @@ export function checkTemplate(template) {
     fail('wrangler.jsonc must set "preview_urls": false, or preview URLs bypass Access.');
     result = 'fail';
   }
-  if (result === 'ok') ok('workers.dev and preview URLs are disabled.');
+  if (result === 'ok') {
+    ok(
+      isWorkersDevHost(config?.shortDomain)
+        ? 'Preview URLs are disabled; deploys turn the workers.dev address on only for your short links.'
+        : 'workers.dev and preview URLs are disabled.',
+    );
+  }
   return result;
 }
 
@@ -44,7 +54,8 @@ export async function checkWranglerLogin(config) {
     ok(`Wrangler is logged in as ${me.email}.`);
     return 'ok';
   } catch {
-    fail('Wrangler is not logged in. Run `npx wrangler login`.');
+    const hint = wranglerTokenOverrideHint();
+    fail(hint ? `Wrangler couldn't use its login. ${hint}` : 'Wrangler is not logged in. Run `npx wrangler login`.');
     return 'fail';
   }
 }
@@ -58,6 +69,7 @@ export async function checkTeamDomain(teamDomain) {
       return 'ok';
     }
     fail(`${teamDomain} did not return Access signing keys (HTTP ${res.status}). Check the team domain.`);
+    info('Renamed your Zero Trust team? Run `npm run setup` and update the Access step (docs/CLOUDFLARE-CHECKLIST.md, "Renaming later").');
     return 'fail';
   } catch (err) {
     warn(`Couldn't reach ${teamDomain} to check it (${err.message}).`);

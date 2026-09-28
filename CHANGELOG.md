@@ -2,6 +2,17 @@
 
 All notable changes to Hop are listed here. Hop follows [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+- `npm run setup` can put short links on a free `workers.dev` address (no domain needed): it looks
+  up the account's subdomain with the API token, and Access protects `/admin` and `/api` there.
+- Setup reads its API token from `HOP_CLOUDFLARE_API_TOKEN` (or a prompt). `CLOUDFLARE_API_TOKEN`
+  is left to Wrangler, and setup and `doctor` warn when it would replace Wrangler's login.
+- The API token prompt is visible again, and confirms when a token is received.
+- Setup warns when only members of your Cloudflare account can sign in, and all dashboard steps
+  use Cloudflare's current menu names.
+- New [Cloudflare checklist](docs/CLOUDFLARE-CHECKLIST.md) for newcomers.
+
 ## 0.1.0 — first public release
 
 - Short links on your own domain: custom or random slugs, background title fetching, query

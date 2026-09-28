@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDeployConfig,
   isPlaceholder,
+  isWorkersDevHost,
   normalizeHostname,
   normalizeTeamDomain,
   parseJsonc,
@@ -71,6 +72,20 @@ describe('validateHopConfig', () => {
   });
 });
 
+describe('workers.dev addresses', () => {
+  it('recognizes workers.dev hosts', () => {
+    expect(isWorkersDevHost('hop.acme.workers.dev')).toBe(true);
+    expect(isWorkersDevHost('go.acme.test')).toBe(false);
+    expect(isWorkersDevHost('workers.dev.evil.test')).toBe(false);
+  });
+
+  it("requires the Worker's own name as the first label", () => {
+    expect(validateHopConfig({ ...valid, shortDomain: 'hop.acme.workers.dev' })).toEqual([]);
+    expect(validateHopConfig({ ...valid, shortDomain: 'links.acme.workers.dev' })).toHaveLength(1);
+    expect(validateHopConfig({ ...valid, shortDomain: 'links.acme.workers.dev' }, { workerName: 'links' })).toEqual([]);
+  });
+});
+
 describe('buildDeployConfig', () => {
   const template = {
     $schema: 'node_modules/wrangler/config-schema.json',
@@ -103,5 +118,19 @@ describe('buildDeployConfig', () => {
     expect(out).not.toHaveProperty('$schema');
     expect(out).not.toHaveProperty('dev');
     expect(template.routes[0]?.pattern).toBe('go.example.com');
+  });
+
+  it('turns workers.dev on and drops the custom-domain route for a workers.dev address', () => {
+    const out = buildDeployConfig(template, { ...valid, shortDomain: 'hop.acme.workers.dev' });
+    expect(out.workers_dev).toBe(true);
+    expect(out.preview_urls).toBe(false);
+    expect(out).not.toHaveProperty('routes');
+    expect(out).toMatchObject({ vars: { SHORT_DOMAIN: 'hop.acme.workers.dev' } });
+  });
+
+  it('keeps workers.dev off for a custom domain even if the template changes', () => {
+    const out = buildDeployConfig({ ...template, workers_dev: true, preview_urls: true }, valid);
+    expect(out.workers_dev).toBe(false);
+    expect(out.preview_urls).toBe(false);
   });
 });

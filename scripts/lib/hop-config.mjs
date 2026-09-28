@@ -62,6 +62,15 @@ export function isValidHostname(host) {
   return HOSTNAME.test(host);
 }
 
+/** Hop served on the account's free `<worker>.<subdomain>.workers.dev` address instead of a custom domain. */
+export function isWorkersDevHost(host) {
+  return /\.workers\.dev$/.test(String(host ?? ''));
+}
+
+export function workersDevHost(workerName, subdomain) {
+  return `${workerName}.${subdomain}.workers.dev`;
+}
+
 export function normalizeTeamDomain(input) {
   const host = normalizeHostname(input);
   if (!host) return '';
@@ -72,13 +81,18 @@ export function isValidAud(aud) {
   return AUD.test(String(aud ?? '').trim());
 }
 
-/** Returns a list of human-readable problems; empty means the config is usable for a deploy. */
-export function validateHopConfig(config) {
+/**
+ * Returns a list of human-readable problems; empty means the config is usable for a deploy.
+ * `workerName` is the template's Worker name, which a workers.dev address must start with.
+ */
+export function validateHopConfig(config, { workerName = 'hop' } = {}) {
   const problems = [];
   if (!config || typeof config !== 'object') return ['hop.config.json is not a JSON object.'];
   if (!ACCOUNT_ID.test(config.accountId ?? '')) problems.push('accountId must be a 32-character Cloudflare account ID.');
   if (!isValidHostname(config.shortDomain ?? '') || isPlaceholder(config.shortDomain)) {
     problems.push('shortDomain must be your short-link hostname, e.g. go.yourcompany.com.');
+  } else if (isWorkersDevHost(config.shortDomain) && !new RegExp(`^${workerName}\\.[a-z0-9-]+\\.workers\\.dev$`).test(config.shortDomain)) {
+    problems.push(`A workers.dev shortDomain must be ${workerName}.<your-subdomain>.workers.dev (the Worker's own address).`);
   }
   if (config.rootRedirectUrl) {
     try {
@@ -114,7 +128,15 @@ export function buildDeployConfig(template, config) {
   out.account_id = config.accountId;
   out.main = rebase(out.main);
   if (out.assets) out.assets = { ...out.assets, directory: rebase(out.assets.directory) };
-  out.routes = [{ pattern: config.shortDomain, custom_domain: true }];
+  if (isWorkersDevHost(config.shortDomain)) {
+    // No custom domain: the Worker is served only on its workers.dev address.
+    out.workers_dev = true;
+    delete out.routes;
+  } else {
+    out.workers_dev = false;
+    out.routes = [{ pattern: config.shortDomain, custom_domain: true }];
+  }
+  out.preview_urls = false;
   out.d1_databases = (out.d1_databases ?? []).map((db) =>
     db.binding === 'DB'
       ? { ...db, database_name: config.database.name, database_id: config.database.id, migrations_dir: rebase(db.migrations_dir) }

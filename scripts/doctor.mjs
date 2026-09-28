@@ -4,9 +4,9 @@ import { bold, readHopConfig, readTemplate, writeDeployConfig } from './lib/cli.
 
 const config = readHopConfig();
 const live = process.argv.includes('--live');
-const results = [checkHopConfig(config), checkTemplate(readTemplate())];
+const results = [checkHopConfig(config), checkTemplate(readTemplate(), config)];
 
-if (results[0] === 'ok') {
+if (results[0] !== 'fail') {
   results.push(await checkWranglerLogin(config));
   results.push(await checkTeamDomain(config.access.teamDomain));
   if (results.at(-2) === 'ok') results.push(await checkRemoteMigrations(config, writeDeployConfig(config)));

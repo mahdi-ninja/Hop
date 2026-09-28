@@ -1,7 +1,8 @@
 # Hop — Product Spec
 
 ## Summary
-A URL shortener on one custom domain (referred to as `SHORT_DOMAIN`, e.g. `go.example.com`).
+A URL shortener on one domain (referred to as `SHORT_DOMAIN`): a custom domain such as
+`go.example.com` (recommended), or the Worker's free `hop.<subdomain>.workers.dev` address.
 Short links are public. The dashboard and API live at `/admin` and `/api` on the same
 domain and are protected by Cloudflare Access. Everyone who gets past Access has full
 rights: they can create, edit, and delete any link. There are no roles or ownership rules.

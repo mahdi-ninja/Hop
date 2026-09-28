@@ -30,5 +30,6 @@ and deployments whose Access application was changed to leave `/admin` or `/api`
   them.
 - The local sign-in shortcut needs both `DEV_AUTH_EMAIL` and a local host name, which
   production traffic can't have.
-- `workers.dev` and preview URLs are disabled, so the Worker is only reachable on your domain.
+- Preview URLs are disabled, and so is the `workers.dev` address unless you chose it as your
+  short-link domain, so the Worker is only reachable on the one domain Access protects.
 - Visits never include IP addresses.
