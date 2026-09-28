@@ -11,6 +11,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mahdi-ninja/hop/actions/workflows/ci.yml"><img src="https://github.com/mahdi-ninja/hop/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0f7a61" alt="MIT licence"></a>
   <img src="https://img.shields.io/badge/runs%20on-Cloudflare%20Workers-f2a15e" alt="Runs on Cloudflare Workers">
 </p>
@@ -65,7 +66,7 @@ New to Cloudflare? Follow the step-by-step [Cloudflare checklist](docs/CLOUDFLAR
 first: it covers each of these, plus your team's login method, with links to Cloudflare's guides.
 
 ```sh
-git clone <this repo> hop && cd hop
+git clone https://github.com/mahdi-ninja/hop && cd hop
 npm install
 npm run setup
 ```

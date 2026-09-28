@@ -4,8 +4,8 @@
 
 Please **don't** open a public issue for security problems.
 
-Report them privately through GitHub: open the repository's **Security** tab and choose
-**Report a vulnerability**. If that isn't available, email **git@dotmahdi.com** with "Hop
+Report them privately through GitHub: [report a vulnerability](https://github.com/mahdi-ninja/hop/security/advisories/new)
+(the repository's **Security** tab → **Report a vulnerability**). If that isn't available, email **git@dotmahdi.com** with "Hop
 security" in the subject.
 
 Please include what you found, how to reproduce it, and the impact you expect. You'll get an

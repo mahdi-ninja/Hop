@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "Self-hosted URL shortener for teams on Cloudflare Workers, with analytics, smart routing and Cloudflare Access sign-in.",
   "license": "MIT",
+  "homepage": "https://github.com/mahdi-ninja/hop#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mahdi-ninja/hop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mahdi-ninja/hop/issues"
+  },
   "keywords": [
     "url-shortener",
     "link-shortener",
