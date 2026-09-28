@@ -235,9 +235,13 @@ implementation, `adapters/cloudflare/access.ts` (`AccessIdentityProvider`):
 3. On success return `{ email }` from the payload; on any failure return `null`.
 4. The middleware turns `null` into `401` JSON for `/api`, plain `401` for `/admin`.
 
-**Local dev bypass** (`adapters/dev/devIdentity.ts`, wrapping the Access provider): if `DEV_AUTH_EMAIL` is set (only in `.dev.vars`) AND the request
-hostname is `localhost`, a `*.localhost` name or `127.0.0.1`, skip verification and use that email.
-Both conditions required. Never set `DEV_AUTH_EMAIL` in `wrangler.jsonc`.
+**Local dev bypass** (`adapters/dev/devIdentity.ts`): if `DEV_AUTH_EMAIL` is set (only in
+`.dev.vars`) AND the request hostname is `localhost`, a `*.localhost` name or `127.0.0.1`, skip
+verification and use that email. Both conditions are required, and `worker.ts` only wires this in
+while the Access values are placeholders, so a real deployment never has it. Never set
+`DEV_AUTH_EMAIL` in `wrangler.jsonc`. `npm run dev` creates `.dev.vars` from `.dev.vars.example`
+when it's missing (`scripts/ensure-dev-vars.mjs`); without it, local `/admin` and `/api` answer
+503 with a message saying to create it.
 
 **CSRF** (in `middleware/auth.ts`, runtime-agnostic): the Access cookie is sent automatically by browsers, so for `POST`/`PATCH`/`DELETE`
 on `/api/*` require `Content-Type: application/json` (except DELETE) and reject requests

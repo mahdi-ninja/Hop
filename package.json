@@ -27,7 +27,7 @@
     "node": "^22.22.0 || ^24.0.0 || >=26.0.0"
   },
   "scripts": {
-    "dev": "npm run build:dashboard && wrangler dev",
+    "dev": "node scripts/ensure-dev-vars.mjs && npm run build:dashboard && wrangler dev",
     "dev:dashboard": "npm --workspace dashboard run dev",
     "build:dashboard": "npm --workspace dashboard run build",
     "setup": "node scripts/setup.mjs",

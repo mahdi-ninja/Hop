@@ -49,6 +49,7 @@ parts specific to AI coding agents.
 ## Commands (keep this section accurate as the project evolves)
 - `npm install` — install root + dashboard deps (npm workspace)
 - `npm run dev` — local Worker at http://go.localhost:4696 with local D1, dashboard built into assets
+  (creates `.dev.vars` from `.dev.vars.example` if it's missing)
 - `npm run dev:dashboard` — Vite dev server on :4697 for dashboard work (proxies /api to the Worker)
 - `npm run typecheck`
 - `npm test` — boundary check, then Vitest in the Workers pool

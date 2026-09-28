@@ -15,10 +15,9 @@ Use the Node version in `.nvmrc` (any of 22.22+, 24 or 26 works).
 
 ```sh
 npm install
-cp .dev.vars.example .dev.vars
 npm run db:migrate:local
 npm run db:seed:local
-npm run dev            # http://go.localhost:4696/admin
+npm run dev            # http://go.localhost:4696/admin (creates .dev.vars on first run)
 ```
 
 No Cloudflare account is needed for local development or tests.

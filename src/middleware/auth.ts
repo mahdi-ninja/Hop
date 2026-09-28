@@ -26,7 +26,10 @@ export function requireIdentity(kind: 'api' | 'page'): MiddlewareHandler<AppEnv>
     const services = c.get('services');
     const identity = await services.identity.identify(c.req.raw);
     if (!identity && !services.config.accessConfigured) {
-      const message = "Cloudflare Access isn't configured for this deployment yet. Run `npm run setup`, then deploy again.";
+      // Locally the usual cause is a missing .dev.vars, not a missing deployment step.
+      const message = isLocalHostname(new URL(c.req.url).hostname)
+        ? 'Local sign-in is off: copy .dev.vars.example to .dev.vars (it sets DEV_AUTH_EMAIL), then restart `npm run dev`.'
+        : "Cloudflare Access isn't configured for this deployment yet. Run `npm run setup`, then deploy again.";
       return kind === 'api' ? apiError(c, 'NOT_CONFIGURED', message) : c.text(message, 503);
     }
     if (!identity) {

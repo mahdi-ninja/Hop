@@ -147,6 +147,18 @@ describe('unconfigured Access', () => {
     expect(await page.text()).toContain('npm run setup');
   });
 
+  it('points local requests at .dev.vars instead of npm run setup', async () => {
+    const services = createFakeServices({ config: { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, accessConfigured: false } });
+    const api = await app.request('http://go.localhost:4696/api/me', {}, { services });
+    expect(api.status).toBe(503);
+    const { error } = (await api.json()) as { error: { code: string; message: string } };
+    expect(error.code).toBe('NOT_CONFIGURED');
+    expect(error.message).toContain('.dev.vars.example');
+    expect(error.message).not.toContain('npm run setup');
+    const page = await app.request('http://localhost:4696/admin/', {}, { services });
+    expect(await page.text()).toContain('.dev.vars.example');
+  });
+
   it('still lets the local dev bypass through', async () => {
     const res = await app.request('https://go.example.com/api/me', { headers: authed() }, { services: unconfigured(tokenIdentity) });
     expect(res.status).toBe(200);

@@ -90,11 +90,13 @@ the Access options, and a manual fallback.
 
 ```sh
 npm install
-cp .dev.vars.example .dev.vars   # DEV_AUTH_EMAIL: signs you in locally without Access
 npm run db:migrate:local
 npm run db:seed:local            # optional: 10 demo links and a few thousand visits
 npm run dev                      # http://go.localhost:4696/admin
 ```
+
+The first `npm run dev` creates `.dev.vars` from `.dev.vars.example`. It sets `DEV_AUTH_EMAIL`,
+which signs you in locally without Access; edit it to use another email.
 
 Short links work locally too: `http://go.localhost:4696/<slug>` redirects through your local
 Worker. Browsers and macOS send any `*.localhost` name to your own machine, so there's nothing

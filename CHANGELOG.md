@@ -9,6 +9,8 @@ All notable changes to Hop are listed here. Hop follows [semantic versioning](ht
 - Setup reads its API token from `HOP_CLOUDFLARE_API_TOKEN` (or a prompt). `CLOUDFLARE_API_TOKEN`
   is left to Wrangler, and setup and `doctor` warn when it would replace Wrangler's login.
 - The API token prompt is visible again, and confirms when a token is received.
+- `npm run dev` creates `.dev.vars` from `.dev.vars.example` when it's missing, so local sign-in
+  works right after cloning; without it, local `/admin` and `/api` now explain how to fix it.
 - Setup warns when only members of your Cloudflare account can sign in, and all dashboard steps
   use Cloudflare's current menu names.
 - New [Cloudflare checklist](docs/CLOUDFLARE-CHECKLIST.md) for newcomers.
