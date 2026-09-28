@@ -1,5 +1,18 @@
 {
   "name": "hop",
+  "version": "0.1.0",
+  "description": "Self-hosted URL shortener for teams on Cloudflare Workers, with analytics, smart routing and Cloudflare Access sign-in.",
+  "license": "MIT",
+  "keywords": [
+    "url-shortener",
+    "link-shortener",
+    "cloudflare-workers",
+    "cloudflare-d1",
+    "cloudflare-access",
+    "self-hosted",
+    "analytics",
+    "qr-code"
+  ],
   "private": true,
   "type": "module",
   "engines": {

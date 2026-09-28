@@ -1,7 +1,7 @@
 # Hop — Deployment
 
-Steps marked **[Human]** need the Cloudflare dashboard or account access. The coding agent
-should prompt for these and wait, rather than guessing values.
+Steps marked **[Human]** need the Cloudflare dashboard or account access. (AI coding agents:
+prompt the human for these and wait, rather than guessing values.)
 
 ## Prerequisites
 - A Cloudflare account, with the domain for your short links added as a zone on Cloudflare.
@@ -97,6 +97,16 @@ If you can't use `npm run setup`:
    }
    ```
 4. `npm run deploy`.
+
+## Abuse and data growth
+Short links are public, and every click is a database write. Hop keeps redirects working when
+writes fail, but a script hammering a link can use up D1's free daily write quota (so stats
+stop recording) and inflate its counts. Two optional safeguards:
+- **Rate limiting:** in the Cloudflare dashboard for your zone, add a WAF rate-limiting rule for
+  your short domain that excludes `/admin*` and `/api*` (for example, 60 requests per minute
+  per IP).
+- **Retention:** visits are kept forever. To trim old ones, run for example
+  `npx wrangler d1 execute <database> --remote --command "DELETE FROM visits WHERE ts < <UTC ms>"`.
 
 ## Limits to be aware of
 Each click is one D1 write (two rows touched in a batch). The Workers Free plan's daily

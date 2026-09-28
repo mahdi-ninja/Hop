@@ -18,49 +18,56 @@
 ## Repo layout
 ```
 hop/
-  AGENTS.md
+  AGENTS.md               # rules for AI coding agents working on the repo
+  CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md  CHANGELOG.md  LICENSE
   README.md
-  docs/
-  wrangler.jsonc
-  package.json            # Worker package + orchestration scripts
-  tsconfig.json
-  vitest.config.ts
-  .dev.vars.example
+  docs/                   # SPEC, ARCHITECTURE, API, DEPLOYMENT; images/ for the README
+  wrangler.jsonc          # committed template; works for local dev as is
+  hop.config.json         # per-deployment values written by `npm run setup` (git-ignored)
+  package.json            # Worker package + orchestration scripts (npm workspace root)
+  tsconfig.json  vitest.config.ts  .dev.vars.example  .nvmrc
+  .github/                # CI workflow, issue and PR templates
   migrations/
     0001_init.sql
+    0002_routing_rules.sql
+  scripts/
+    setup.mjs  deploy.mjs  doctor.mjs   # interactive setup, deploy pipeline, readiness checks
+    seed-local.mjs                      # demo data for local dev
+    check-boundaries.mjs                # enforces the portability rules below
+    lib/                                # prompts, Cloudflare API, checks, config merging
   src/
     worker.ts             # Cloudflare entry: builds Services from env, mounts app
     app.ts                # createApp(): Hono app + route wiring; runtime-agnostic
     core/
       ports.ts            # interfaces: LinkStore, VisitStore, GeoLookup, IdentityProvider
-      types.ts            # Link, NewVisit, Visit, Stats, Identity, Range, etc.
+      types.ts            # Link, NewVisit, Visit, Stats, Identity, Range, routing rules, etc.
       services.ts         # Services type + Hono context typing
     routes/redirect.ts    # GET/HEAD /:slug, GET /
     routes/api.ts         # /api/* (all behind requireIdentity)
     routes/admin.ts       # /admin/* static assets + SPA fallback
+    routes/icons.ts       # public /favicon.ico, /favicon.svg, /apple-touch-icon.png
     middleware/auth.ts    # requireIdentity: calls IdentityProvider, CSRF checks
     lib/slug.ts           # generation + validation + reserved list
-    lib/url.ts            # target validation, query-string merge
+    lib/url.ts            # target validation, query-string merge, local-host helpers
     lib/visit.ts          # read the visitor (geo, UA, referrer, language, bot) and build NewVisit
-    lib/routing.ts        # routing rule types, validation and first-match evaluation (runtime-agnostic)
-    lib/title.ts          # extract <title> from HTML (runtime-agnostic)
+    lib/routing.ts        # routing rule validation and first-match evaluation
+    lib/title.ts          # background <title> fetch and extraction
+    lib/range.ts          # stats date ranges
+    lib/cursor.ts         # opaque pagination cursors
     lib/errors.ts         # error helper matching API.md
     pages/notFound.ts     # 404 HTML
     adapters/
-      d1/linkStore.ts     # LinkStore on D1
-      d1/visitStore.ts    # VisitStore on D1 (incl. stats SQL)
-      cloudflare/geo.ts        # GeoLookup from request.cf
-      cloudflare/access.ts     # IdentityProvider verifying Access JWTs
-      dev/devIdentity.ts       # localhost-only dev bypass IdentityProvider
+      d1/                 # LinkStore and VisitStore on D1 (all SQL lives here)
+      cloudflare/geo.ts   # GeoLookup from request.cf
+      cloudflare/access.ts # IdentityProvider verifying Access JWTs
+      dev/devIdentity.ts  # local-only dev bypass IdentityProvider
   test/
-    fakes/                # in-memory LinkStore/VisitStore/GeoLookup/IdentityProvider
-  dashboard/
-    package.json
-    vite.config.ts        # base: '/admin/', outDir: '../public/admin'
-    index.html
-    src/...
-  public/                 # build output for Static Assets (gitignored)
-    admin/
+    fakes/                # in-memory LinkStore/VisitStore used by route tests
+  dashboard/              # React SPA (npm workspace)
+    vite.config.ts        # base: '/admin/', outDir: '../public/admin', dev server on :4697
+    public/               # favicons and self-hosted fonts (OFL licences alongside)
+    src/                  # api client, components, pages, lib
+  public/                 # build output for Static Assets (git-ignored)
 ```
 
 ## Portability boundaries
@@ -71,7 +78,7 @@ writing new adapters and a new entry point — without touching routes or busine
 ### Rules
 - Only `src/worker.ts` and files under `src/adapters/cloudflare/` and `src/adapters/d1/`
   may reference `env.DB`, `D1Database`, `request.cf`, `Cf-Access-*` headers, or
-  `CF_Authorization`. Add a lint rule or a test that greps for these to enforce it.
+  `CF_Authorization`. `scripts/check-boundaries.mjs` (run by `npm test`) enforces this.
 - Routes and `lib/` get everything via a `Services` object on the Hono context
   (`c.get('services')`), never from `c.env` directly (except `SHORT_DOMAIN`-style config,
   which is passed in as a plain `Config` object inside `Services`).
@@ -79,7 +86,8 @@ writing new adapters and a new entry point — without touching routes or busine
   future `better-sqlite3` adapter can reuse the same SQL and the same migration files.
 - `ctx.waitUntil` is only called from the entry point / adapters via a `defer(promise)`
   function in `Services`, so background work isn't tied to the Workers API either.
-- Do NOT build any non-Cloudflare adapters now. Only the in-memory fakes used in tests.
+- Hop ships only the Cloudflare adapters (plus the in-memory fakes used in tests). A new
+  runtime means new adapters and a new entry point, not changes to routes or `lib/`.
 
 ### Interfaces (`src/core/ports.ts`)
 ```ts
@@ -153,33 +161,21 @@ Route precedence in the Worker (first match wins):
 4. `/:slug` → redirect
 5. anything else (e.g. multi-segment paths) → 404 page
 
-## wrangler.jsonc (shape)
-```jsonc
-{
-  "name": "hop",
-  "main": "src/index.ts",
-  "compatibility_date": "<today's date when scaffolding>",
-  "workers_dev": false,
-  "preview_urls": false,
-  "routes": [{ "pattern": "go.example.com", "custom_domain": true }],
-  "assets": {
-    "directory": "./public",
-    "binding": "ASSETS",
-    "run_worker_first": true
-  },
-  "d1_databases": [
-    { "binding": "DB", "database_name": "hop", "database_id": "<filled in by human>", "migrations_dir": "migrations" }
-  ],
-  "vars": {
-    "SHORT_DOMAIN": "go.example.com",
-    "ACCESS_TEAM_DOMAIN": "https://<team>.cloudflareaccess.com",
-    "ACCESS_AUD": "<Access application AUD tag>",
-    "ROOT_REDIRECT_URL": ""
-  }
-}
-```
-`workers_dev: false` and `preview_urls: false` matter: they stop anyone reaching the
-Worker on a `*.workers.dev` URL that isn't behind Access.
+## Configuration
+`wrangler.jsonc` is a committed template that runs local dev as is: `SHORT_DOMAIN` is
+`go.localhost:4696` (with `dev.port: 4696`) and the Access values are placeholders. It has no
+`dev.host` and no route, so under `wrangler dev` the Worker sees the real `Host` header; the
+local sign-in shortcut depends on that to reject DNS-rebinding requests. Production values
+live in the git-ignored `hop.config.json` (account, domain, D1 database, Access team domain and
+AUD, root redirect). `npm run deploy` merges the two into `.wrangler/deploy/wrangler.production.json`
+(`scripts/lib/hop-config.mjs`), rebasing relative paths, and deploys that file.
+
+`workers_dev: false` and `preview_urls: false` matter: they stop anyone reaching the Worker on
+a `*.workers.dev` or preview URL that isn't behind Access. `doctor` and a test check them.
+
+When the Access values are missing or placeholders, `Config.accessConfigured` is false and
+`requireIdentity` answers `/admin` and `/api` with a 503 `NOT_CONFIGURED` instead of a bare 401
+(the local dev bypass still works).
 
 ## Database schema (`migrations/0001_init.sql`, `0002_routing_rules.sql`)
 ```sql
@@ -289,10 +285,15 @@ All filtered by `slug` (per-link) or not (overview), by `ts >= from AND ts < to`
 - Gap-filling of days is done in the dashboard.
 
 ## Dashboard
-- Vite `base: '/admin/'`; client-side routing under `/admin` (react-router).
-- Pages: `/admin` (overview), `/admin/links` (list + search + create), `/admin/links/:slug` (detail: edit, stats, QR, delete).
-- Fetch the current user from `GET /api/me` to show "Signed in as …" in the header.
-- Local dev: the Worker runs at `http://go.localhost:4696` (`SHORT_DOMAIN` and `dev.host` in
+- Vite `base: '/admin/'`; client-side routing under `/admin` (react-router). The link detail and
+  overview pages are lazy-loaded so the links list doesn't wait on Recharts.
+- Pages: `/admin` (overview), `/admin/links` (list + search + create), `/admin/links/:slug`
+  (detail: edit, smart routing, stats, QR, delete).
+- Fetch the current user from `GET /api/me` to show the signed-in email in the header.
+- Styling: Tailwind v4 with colour tokens defined once for light and dark (`src/index.css`);
+  fonts (Bricolage Grotesque, DM Sans, DM Mono) are self-hosted from `dashboard/public/fonts`,
+  so the admin UI makes no third-party requests. Icons are inline SVG components.
+- Local dev: the Worker runs at `http://go.localhost:4696` (`SHORT_DOMAIN` and `dev.port` in
   `wrangler.jsonc`), so short URLs work locally; Vite runs on `:4697` (strict port) and proxies
   `/api` to the Worker port it reads from `wrangler.jsonc`. Short URLs use `http://` only for
   `localhost`/`*.localhost` domains.

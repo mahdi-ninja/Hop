@@ -16,7 +16,8 @@ rights: they can create, edit, and delete any link. There are no roles or owners
 ### 1. Redirects
 - `GET /:slug` → `302` to the link's target URL. `HEAD` also redirects but is not logged.
 - Incoming query string is forwarded: if the target already has params, merge them;
-  incoming params win on key conflicts.
+  incoming params win on key conflicts. (So a visitor can override a parameter baked into the
+  target, such as `utm_source` or a `redirect_uri`; don't rely on target parameters for security.)
 - Response has `Cache-Control: private, no-store` so every click reaches the Worker.
 - Unknown slug → `404` with a small, self-contained HTML "Link not found" page.
 - `GET /` → `302` to `ROOT_REDIRECT_URL` if set, otherwise to `/admin`.
@@ -86,6 +87,10 @@ Bots and link previews are evaluated like any other visitor; add a `visitor is b
 them somewhere specific. Incoming query strings are merged into whichever destination is chosen,
 exactly as for the default URL. Routing is best-effort: geo is IP-based (VPNs route by their exit
 country) and device/browser/OS trust the User-Agent.
+
+Routing is **not access control**. Device, browser, OS, language and bot/person come from
+headers the visitor controls, so anyone can reach any rule's destination by changing them; only
+country and continent come from Cloudflare. Don't use rule destinations for anything secret.
 
 Analytics are unchanged: visits are recorded per link, not per rule or destination.
 

@@ -99,5 +99,6 @@ mkdirSync(dir, { recursive: true });
 const file = join(dir, 'seed.sql');
 writeFileSync(file, statements.join('\n') + '\n');
 
-execFileSync('npx', ['wrangler', 'd1', 'execute', 'hop', '--local', `--file=${file}`], { stdio: 'inherit' });
+// Extra arguments go to Wrangler, e.g. `npm run db:seed:local -- --persist-to ./somewhere`.
+execFileSync('npx', ['wrangler', 'd1', 'execute', 'hop', '--local', `--file=${file}`, ...process.argv.slice(2)], { stdio: 'inherit' });
 console.log(`Seeded ${links.length} links and ${totalVisits} visits into the local D1 database.`);
