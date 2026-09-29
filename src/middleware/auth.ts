@@ -25,7 +25,7 @@ export function requireIdentity(kind: 'api' | 'page'): MiddlewareHandler<AppEnv>
   return async (c, next) => {
     const services = c.get('services');
     const identity = await services.identity.identify(c.req.raw);
-    if (!identity && !services.config.accessConfigured) {
+    if (!identity && !services.config.authConfigured) {
       // Locally the usual cause is a missing .dev.vars, not a missing deployment step.
       const message = isLocalHostname(new URL(c.req.url).hostname)
         ? 'Local sign-in is off: copy .dev.vars.example to .dev.vars (it sets DEV_AUTH_EMAIL), then restart `npm run dev`.'

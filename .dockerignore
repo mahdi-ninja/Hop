@@ -1,0 +1,11 @@
+.git
+node_modules
+dashboard/node_modules
+public
+dist
+.wrangler
+.dev.vars
+.env
+hop.config.json
+docker
+hop-stack

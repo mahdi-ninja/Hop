@@ -1,0 +1,5 @@
+# Without Cloudflare in front, any geo header was sent by the visitor, so drop them.
+request_header -CF-IPCountry
+request_header -CF-IPContinent
+request_header -CF-Region
+request_header -CF-IPCity

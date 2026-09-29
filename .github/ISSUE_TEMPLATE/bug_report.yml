@@ -28,17 +28,22 @@ body:
       label: Where
       options:
         - Deployed on Cloudflare
+        - Deployed with Docker (oauth2-proxy)
+        - Deployed with Docker (Authelia)
+        - Deployed with Docker (Cloudflare Access tunnel)
+        - Exported stack (Portainer or another host)
         - Local development (npm run dev)
         - npm run setup / deploy / doctor
+        - npm run setup:docker / --export / doctor --docker
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: Hop version or commit
-      placeholder: e.g. 0.1.0 or a commit hash
+      placeholder: e.g. 0.1.0, a commit hash, or an image tag
   - type: textarea
     id: logs
     attributes:
       label: Logs or screenshots
-      description: Remove account IDs, domains and tokens before pasting.
+      description: Remove account IDs, domains, tokens and anything from .env before pasting.

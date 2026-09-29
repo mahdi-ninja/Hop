@@ -1,5 +1,10 @@
 # Cloudflare checklist for Hop
 
+Running Hop on Docker with oauth2-proxy or Authelia? You don't need Cloudflare at all; see
+the [Docker guide](deploy/docker.md). The Docker + Cloudflare Access option needs steps
+1, 3 (your own domain, not `workers.dev`), 4 and 5 below, plus Node.js and a tunnel; `setup:docker`
+guides you.
+
 New to Cloudflare? Work through this list before running `npm run setup`. Each step links to
 Cloudflare's own guide. Menu names below match Cloudflare's docs as of September 2026; if a
 screen looks different, the linked guide is the source of truth.
@@ -79,7 +84,7 @@ have one (or use a free `workers.dev` address instead, see step 3).
 ## Run setup
 
 - [ ] **9.** `npm run setup`, and answer its questions. It checks your answers as it goes and
-  deploys at the end. What each step does: [DEPLOYMENT.md](DEPLOYMENT.md).
+  deploys at the end. What each step does: [the Cloudflare guide](deploy/cloudflare.md).
 
 ## After the first deploy
 

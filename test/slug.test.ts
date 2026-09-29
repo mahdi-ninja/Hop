@@ -12,7 +12,7 @@ describe('slug format', () => {
 });
 
 describe('reserved slugs', () => {
-  it.each(['admin', 'API', 'cdn-cgi', 'Assets', 'static', 'HEALTH', 'robots.txt', 'favicon.ico'])(
+  it.each(['admin', 'API', 'cdn-cgi', 'Assets', 'static', 'HEALTH', 'robots.txt', 'favicon.ico', 'oauth2', 'Authelia'])(
     'reserves %s case-insensitively',
     (slug) => {
       expect(isReservedSlug(slug)).toBe(true);

@@ -17,7 +17,7 @@ export function checkHopConfig(config) {
   }
   ok(`hop.config.json is complete (${config.shortDomain}).`);
   if (isWorkersDevHost(config.shortDomain)) {
-    warn('Short links use a workers.dev address: they are tied to this account and some networks block workers.dev. See docs/DEPLOYMENT.md.');
+    warn('Short links use a workers.dev address: they are tied to this account and some networks block workers.dev. See docs/deploy/cloudflare.md, "No domain? Use workers.dev".');
     return 'warn';
   }
   return 'ok';
@@ -130,9 +130,9 @@ function freshLookup(hostname, options, callback) {
 }
 
 /** One HTTPS request without following redirects. Never throws; failures come back as `problem`. */
-function probe(url) {
+export function probe(url) {
   return new Promise((resolve) => {
-    const req = https.get(url, { lookup: freshLookup, timeout: 8000, headers: { 'User-Agent': 'hop-setup-check' } }, (res) => {
+    const req = https.get(url, { lookup: freshLookup, timeout: 8000, headers: { 'User-Agent': 'hop-setup-check', Accept: 'text/html' } }, (res) => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', (chunk) => {
@@ -153,7 +153,7 @@ function describeNetworkError(err) {
   return err.message;
 }
 
-function describeHealth(result) {
+export function describeHealth(result) {
   if (result.problem) return result.problem;
   if (result.status === 200 && result.body.trim() === 'ok') return null;
   if (result.status >= 520 && result.status <= 530) return `Cloudflare is still attaching the domain (HTTP ${result.status})`;

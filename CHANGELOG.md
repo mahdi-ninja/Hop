@@ -4,6 +4,16 @@ All notable changes to Hop are listed here. Hop follows [semantic versioning](ht
 
 ## Unreleased
 
+- Hop runs on Docker too: Node + SQLite behind Caddy, with sign-in by oauth2-proxy (Google,
+  GitHub, Microsoft or OIDC accounts), Authelia (local users), or Cloudflare Access through a
+  Tunnel. With Authelia, people sign in with their email address. `npm run setup:docker` writes
+  the settings, `npm run doctor -- --docker` checks them, and the new Docker guide covers
+  backups and moving from Workers.
+- Deployment docs are split into [Cloudflare](docs/deploy/cloudflare.md) and
+  [Docker](docs/deploy/docker.md) guides; [DEPLOYMENT.md](docs/DEPLOYMENT.md) now compares the two.
+- The Docker image is published to `ghcr.io/mahdi-ninja/hop` for amd64 and arm64.
+  `npm run setup:docker -- --export` writes a self-contained stack for Portainer or any Docker host.
+- `oauth2` and `authelia` are now reserved slugs.
 - `npm run setup` can put short links on a free `workers.dev` address (no domain needed): it looks
   up the account's subdomain with the API token, and Access protects `/admin` and `/api` there.
 - Setup reads its API token from `HOP_CLOUDFLARE_API_TOKEN` (or a prompt). `CLOUDFLARE_API_TOKEN`

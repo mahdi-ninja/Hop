@@ -1,0 +1,25 @@
+handle /oauth2/* {
+	reverse_proxy oauth2-proxy:4180
+}
+
+@admin path /admin /admin/*
+handle @admin {
+	forward_auth oauth2-proxy:4180 {
+		uri /oauth2/auth
+		copy_headers X-Auth-Request-Email>X-Hop-Email
+		@signin status 401
+		handle_response @signin {
+			redir * /oauth2/start?rd={uri}
+		}
+	}
+	import to-hop-signed-in
+}
+
+@api path /api /api/*
+handle @api {
+	forward_auth oauth2-proxy:4180 {
+		uri /oauth2/auth
+		copy_headers X-Auth-Request-Email>X-Hop-Email
+	}
+	import to-hop-signed-in
+}

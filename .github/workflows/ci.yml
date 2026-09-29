@@ -32,3 +32,26 @@ jobs:
       - run: npm run build:dashboard
       - name: Bundle the Worker without deploying
         run: npx wrangler deploy --dry-run --outdir dist
+
+  docker:
+    name: Docker image and preset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t hop:ci .
+      - name: Start the image and check /health
+        run: |
+          docker run -d --name hop -p 8787:8787 \
+            -e SHORT_DOMAIN=go.example.test -e AUTH_MODE=proxy -e PROXY_SECRET=ci-secret-0123456789abcdef0123456789 hop:ci
+          for _ in $(seq 1 20); do curl -fsS http://localhost:8787/health && exit 0; sleep 1; done
+          docker logs hop
+          exit 1
+      - name: Validate the Caddy configuration for each sign-in option
+        run: |
+          for provider in oauth2-proxy authelia; do
+            for geo in none cloudflare; do
+              docker run --rm -v "$PWD/docker/caddy:/etc/caddy:ro" -e SHORT_DOMAIN=go.example.test \
+                -e PROXY_SECRET=x -e AUTH_PROVIDER=$provider -e GEO_SOURCE=$geo \
+                caddy:2.11 caddy validate --config /etc/caddy/Caddyfile
+            done
+          done

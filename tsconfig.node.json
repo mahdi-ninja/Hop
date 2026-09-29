@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/node.ts", "src/adapters/node", "src/adapters/sqlite", "src/adapters/proxy", "test/node"],
+  "exclude": []
+}

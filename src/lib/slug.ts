@@ -9,6 +9,9 @@ const RESERVED_SLUGS = new Set([
   'health',
   'robots.txt',
   'favicon.ico',
+  // Paths the Docker preset's auth proxies serve on the short domain.
+  'oauth2',
+  'authelia',
 ]);
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';

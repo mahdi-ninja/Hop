@@ -1,0 +1,2 @@
+# Cloudflare sets the CF-IP* headers; they're only trustworthy if this host accepts traffic from
+# Cloudflare alone (firewall the origin to Cloudflare's IP ranges).

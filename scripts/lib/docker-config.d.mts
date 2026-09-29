@@ -1,0 +1,22 @@
+export type DockerEnv = Record<string, string | undefined>;
+
+export const ENV_FILE: string;
+export const AUTHELIA_USERS_FILE: string;
+export const OAUTH2_EMAILS_FILE: string;
+export const AUTH_PROVIDERS: readonly string[];
+export const OAUTH2_PROVIDERS: readonly string[];
+export const MIN_PROXY_SECRET_LENGTH: number;
+export function authModeFor(provider: string): 'proxy' | 'access';
+export function readPresetFile(root: string, file: string): string | undefined;
+export function composeImages(composeText: string): Record<string, string>;
+export function needsQuoting(value: string | undefined): boolean;
+export function envLine(key: string, value: string | undefined): string;
+export function autheliaUserKeys(usersYaml: string | undefined): string[];
+export function newSecret(bytes?: number): string;
+export function newCookieSecret(): string;
+export function parseEnv(text: string): Record<string, string>;
+export function serializeEnv(values: DockerEnv): string;
+export function withSecrets(values: DockerEnv): DockerEnv;
+export function listedEmails(text: string | undefined): string[];
+export function autheliaUsersYaml(user: { email: string; hash: string }): string;
+export function validateDockerEnv(env: DockerEnv, files?: { emails?: string; autheliaUsers?: string }): string[];

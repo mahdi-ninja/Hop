@@ -1,6 +1,8 @@
 # Hop — API Contract
 
-Base path: `/api`. All endpoints require Cloudflare Access (see ARCHITECTURE.md).
+Base path: `/api`. All endpoints require sign-in: Cloudflare Access, or the Docker preset's auth
+proxy (see ARCHITECTURE.md). When the proxy rejects a request it answers 401 itself, without
+the JSON error body.
 JSON in, JSON out. Timestamps are UTC milliseconds.
 
 ## Error shape
@@ -15,7 +17,7 @@ JSON in, JSON out. Timestamps are UTC milliseconds.
 | 404 | `NOT_FOUND` |
 | 409 | `SLUG_TAKEN` |
 | 500 | `INTERNAL` |
-| 503 | `NOT_CONFIGURED` (Access team domain / AUD not set for this deployment) |
+| 503 | `NOT_CONFIGURED` (Workers only: Access team domain / AUD not set for this deployment; Docker refuses to start instead) |
 
 ## Link object
 ```json

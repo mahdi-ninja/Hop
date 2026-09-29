@@ -9,5 +9,6 @@
 ## Checklist
 
 - [ ] `npm run typecheck` and `npm test` pass
-- [ ] Docs updated where behaviour or the API changed (SPEC, API, ARCHITECTURE, README)
-- [ ] No real account IDs, database IDs, Access values or domains added
+- [ ] Docs updated where behaviour or the API changed (SPEC, API, ARCHITECTURE, docs/deploy/, README)
+- [ ] Docker changes checked with `docker compose up -d --build` and `npm run doctor -- --docker`
+- [ ] No real account IDs, database IDs, Access values, domains or secrets added

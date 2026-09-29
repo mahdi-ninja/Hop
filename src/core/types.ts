@@ -119,6 +119,6 @@ export interface Geo {
 export interface Config {
   shortDomain: string;
   rootRedirectUrl: string | null;
-  /** False while ACCESS_TEAM_DOMAIN / ACCESS_AUD are unset or still placeholders. */
-  accessConfigured: boolean;
+  /** False while sign-in isn't set up; on Workers, while the Access values are unset or placeholders. */
+  authConfigured: boolean;
 }

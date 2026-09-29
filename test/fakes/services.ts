@@ -17,7 +17,7 @@ export function createFakeServices(overrides: Partial<Omit<Services, 'links' | '
     geo: { lookup: async () => ({ continent: null, country: null, region: null, city: null }) },
     identity: { identify: async () => null },
     assets: { fetch: async () => new Response('asset', { status: 200 }) },
-    config: { shortDomain: 'go.example.com', rootRedirectUrl: null, accessConfigured: true },
+    config: { shortDomain: 'go.example.com', rootRedirectUrl: null, authConfigured: true },
     defer: (p) => {
       deferred.push(p);
     },

@@ -87,7 +87,7 @@ describe('CSRF checks', () => {
   it('allows another local port when the request is to a *.localhost short domain', async () => {
     const services = createFakeServices({
       identity: tokenIdentity,
-      config: { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, accessConfigured: true },
+      config: { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, authConfigured: true },
     });
     for (const origin of ['http://go.localhost:4696', 'http://go.localhost:4697']) {
       const res = await app.request(
@@ -135,7 +135,7 @@ describe('CSRF checks', () => {
 
 describe('unconfigured Access', () => {
   function unconfigured(identity: IdentityProvider = { identify: async () => null }) {
-    return createFakeServices({ identity, config: { shortDomain: 'go.example.com', rootRedirectUrl: null, accessConfigured: false } });
+    return createFakeServices({ identity, config: { shortDomain: 'go.example.com', rootRedirectUrl: null, authConfigured: false } });
   }
 
   it('explains the problem instead of a bare 401', async () => {
@@ -148,7 +148,7 @@ describe('unconfigured Access', () => {
   });
 
   it('points local requests at .dev.vars instead of npm run setup', async () => {
-    const services = createFakeServices({ config: { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, accessConfigured: false } });
+    const services = createFakeServices({ config: { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, authConfigured: false } });
     const api = await app.request('http://go.localhost:4696/api/me', {}, { services });
     expect(api.status).toBe(503);
     const { error } = (await api.json()) as { error: { code: string; message: string } };

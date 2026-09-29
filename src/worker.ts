@@ -42,7 +42,7 @@ function buildServices(env: WorkerEnv, ctx: ExecutionContext): Services {
     config: {
       shortDomain: env.SHORT_DOMAIN,
       rootRedirectUrl: env.ROOT_REDIRECT_URL || null,
-      accessConfigured: isAccessConfigured(env),
+      authConfigured: isAccessConfigured(env),
     },
   };
 }

@@ -1,0 +1,22 @@
+# Routes for Hop behind an auth proxy. Short links go straight to Hop; /admin and /api only
+# after the auth proxy approves the request. Values come from .env through compose.yaml.
+
+(to-hop-signed-in) {
+	reverse_proxy hop:8787 {
+		header_up X-Hop-Proxy-Secret {$PROXY_SECRET}
+	}
+}
+
+{$SHORT_DOMAIN} {
+	# Hop trusts these headers in proxy mode, so nothing a visitor sends may reach it under
+	# these names. Caddy sets them itself below, only after sign-in succeeds.
+	request_header -X-Hop-Email
+	request_header -X-Hop-Proxy-Secret
+
+	import geo-{$GEO_SOURCE}.caddy
+	import auth-{$AUTH_PROVIDER}.caddy
+
+	handle {
+		reverse_proxy hop:8787
+	}
+}

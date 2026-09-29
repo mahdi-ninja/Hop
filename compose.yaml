@@ -1,0 +1,97 @@
+# Hop on Docker. `npm run setup:docker` writes .env, which picks the sign-in option through
+# COMPOSE_PROFILES: oauth2-proxy or authelia (behind Caddy), or access (Cloudflare Tunnel).
+# See docs/deploy/docker.md. Values for services outside the active profile may be empty,
+# so only SHORT_DOMAIN and AUTH_MODE are required here; `npm run doctor -- --docker` checks the rest.
+name: hop
+
+services:
+  hop:
+    build: .
+    image: hop:local
+    restart: unless-stopped
+    environment:
+      SHORT_DOMAIN: ${SHORT_DOMAIN:?Run npm run setup:docker to create .env}
+      ROOT_REDIRECT_URL: ${ROOT_REDIRECT_URL:-}
+      AUTH_MODE: ${AUTH_MODE:?Run npm run setup:docker to create .env}
+      PROXY_SECRET: ${PROXY_SECRET:-}
+      ACCESS_TEAM_DOMAIN: ${ACCESS_TEAM_DOMAIN:-}
+      ACCESS_AUD: ${ACCESS_AUD:-}
+      GEO_SOURCE: ${GEO_SOURCE:-none}
+    volumes:
+      - hop-data:/data
+    # No published ports: only Caddy or cloudflared may reach Hop, because in proxy mode Hop
+    # trusts the sign-in headers they forward.
+
+  caddy:
+    image: caddy:2.11
+    profiles: [oauth2-proxy, authelia]
+    restart: unless-stopped
+    depends_on: [hop]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SHORT_DOMAIN: ${SHORT_DOMAIN}
+      PROXY_SECRET: ${PROXY_SECRET:-}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-}
+      GEO_SOURCE: ${GEO_SOURCE:-none}
+    volumes:
+      - ./docker/caddy:/etc/caddy:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.4
+    profiles: [oauth2-proxy]
+    restart: unless-stopped
+    environment:
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      # Only Caddy, on the private Compose network, talks to oauth2-proxy.
+      OAUTH2_PROXY_TRUSTED_PROXY_IPS: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fd00::/8
+      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+      OAUTH2_PROXY_UPSTREAMS: static://202
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_COOKIE_NAME: _hop_session
+      OAUTH2_PROXY_REDIRECT_URL: https://${SHORT_DOMAIN}/oauth2/callback
+      OAUTH2_PROXY_PROVIDER: ${OAUTH2_PROXY_PROVIDER:-google}
+      OAUTH2_PROXY_OIDC_ISSUER_URL: ${OAUTH2_PROXY_OIDC_ISSUER_URL:-}
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_CLIENT_ID:-}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:-}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-}
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${OAUTH2_PROXY_EMAIL_DOMAINS:-}
+      OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE: /etc/oauth2-proxy/emails.txt
+    volumes:
+      - ./docker/oauth2-proxy/emails.txt:/etc/oauth2-proxy/emails.txt:ro
+
+  authelia:
+    image: authelia/authelia:4.39
+    profiles: [authelia]
+    restart: unless-stopped
+    environment:
+      X_AUTHELIA_CONFIG_FILTERS: template
+      SHORT_DOMAIN: ${SHORT_DOMAIN}
+      AUTHELIA_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET:-}
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY:-}
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: ${AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET:-}
+    volumes:
+      - ./docker/authelia/configuration.yml:/config/configuration.yml:ro
+      - ./docker/authelia/users.yml:/config/users.yml
+      - authelia-data:/data
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    profiles: [access]
+    restart: unless-stopped
+    depends_on: [hop]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+
+volumes:
+  hop-data:
+  caddy-data:
+  caddy-config:
+  authelia-data:

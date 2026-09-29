@@ -48,7 +48,7 @@ describe('POST /api/links', () => {
   });
 
   it('builds http short URLs for a local short domain', async () => {
-    services.config = { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, accessConfigured: true };
+    services.config = { shortDomain: 'go.localhost:4696', rootRedirectUrl: null, authConfigured: true };
     const { json } = await create({ url: 'https://example.com/', slug: 'local' });
     expect(json.shortUrl).toBe('http://go.localhost:4696/local');
   });

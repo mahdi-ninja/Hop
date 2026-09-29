@@ -1,0 +1,27 @@
+@authelia path /authelia /authelia/*
+handle @authelia {
+	reverse_proxy authelia:9091
+}
+
+@admin path /admin /admin/*
+handle @admin {
+	forward_auth authelia:9091 {
+		uri /authelia/api/authz/forward-auth
+		copy_headers Remote-Email>X-Hop-Email
+	}
+	import to-hop-signed-in
+}
+
+@api path /api /api/*
+handle @api {
+	forward_auth authelia:9091 {
+		uri /authelia/api/authz/forward-auth
+		copy_headers Remote-Email>X-Hop-Email
+		# Authelia redirects to its sign-in page; API callers should get a plain 401 instead.
+		@signin status 3xx
+		handle_response @signin {
+			respond 401
+		}
+	}
+	import to-hop-signed-in
+}

@@ -1,7 +1,7 @@
 {
   "name": "hop",
   "version": "0.1.0",
-  "description": "Self-hosted URL shortener for teams on Cloudflare Workers, with analytics, smart routing and Cloudflare Access sign-in.",
+  "description": "Self-hosted URL shortener for teams on Cloudflare Workers or Docker, with analytics, smart routing and sign-in handled in front of it.",
   "license": "MIT",
   "homepage": "https://github.com/mahdi-ninja/hop#readme",
   "repository": {
@@ -16,6 +16,8 @@
     "link-shortener",
     "cloudflare-workers",
     "cloudflare-d1",
+    "docker",
+    "sqlite",
     "cloudflare-access",
     "self-hosted",
     "analytics",
@@ -30,9 +32,11 @@
     "dev": "node scripts/ensure-dev-vars.mjs && npm run build:dashboard && wrangler dev",
     "dev:dashboard": "npm --workspace dashboard run dev",
     "build:dashboard": "npm --workspace dashboard run build",
+    "build:node": "npm run build:dashboard && node scripts/build-node.mjs",
     "setup": "node scripts/setup.mjs",
+    "setup:docker": "node scripts/setup-docker.mjs",
     "doctor": "node scripts/doctor.mjs",
-    "typecheck": "tsc --noEmit && npm --workspace dashboard run typecheck",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && npm --workspace dashboard run typecheck",
     "test": "npm run check:boundaries && vitest run",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "db:migrate:local": "wrangler d1 migrations apply hop --local",
@@ -42,13 +46,16 @@
     "cf-typegen": "wrangler types --strict-vars=false"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.1",
     "hono": "^4.13.10",
     "jose": "^6.2.12",
     "ua-parser-js": "^1.0.41"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@types/node": "^24.19.0",
     "@types/ua-parser-js": "^0.7.39",
+    "esbuild": "0.28.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11",
     "wrangler": "^4.143.0"

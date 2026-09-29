@@ -1,0 +1,10 @@
+# Example users file. npm run setup:docker generates docker/authelia/users.yml with your first
+# user; copy this only if you write the settings by hand. People sign in with their email, so each
+# key is the email address, in lower case (Authelia won't start otherwise). Hash passwords with:
+#   docker compose run --rm authelia authelia crypto hash generate argon2
+users:
+  'ann@example.com':
+    disabled: false
+    displayname: 'ann@example.com'
+    email: 'ann@example.com'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_A_REAL_HASH'

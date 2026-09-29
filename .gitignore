@@ -5,3 +5,10 @@ node_modules/
 dist/
 # Per-deployment settings written by `npm run setup`
 hop.config.json
+# Docker preset settings written by `npm run setup:docker`
+.env
+docker/authelia/users.yml
+docker/oauth2-proxy/emails.txt
+# Stack exported by `npm run setup:docker -- --export`
+hop-stack/
+.DS_Store

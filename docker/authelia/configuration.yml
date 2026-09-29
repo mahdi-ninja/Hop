@@ -1,0 +1,44 @@
+# Authelia for Hop's Docker preset. {{ env "..." }} values come from .env (template filter);
+# secrets are passed as AUTHELIA_* environment variables by compose.yaml.
+# Reference: https://www.authelia.com/configuration/prologue/introduction/
+theme: auto
+
+server:
+  address: 'tcp://:9091/authelia'
+
+log:
+  level: info
+
+authentication_backend:
+  # Each user's key in users.yml is their email, so people sign in with their email address.
+  file:
+    path: /config/users.yml
+    watch: true
+    search:
+      case_insensitive: true
+
+access_control:
+  default_policy: deny
+  rules:
+    # Use two_factor to require TOTP or a security key after the password.
+    - domain: '{{ env "SHORT_DOMAIN" }}'
+      policy: one_factor
+
+session:
+  cookies:
+    - domain: '{{ env "SHORT_DOMAIN" }}'
+      authelia_url: 'https://{{ env "SHORT_DOMAIN" }}/authelia'
+      default_redirection_url: 'https://{{ env "SHORT_DOMAIN" }}/admin'
+
+storage:
+  local:
+    path: /data/db.sqlite3
+
+# Password-reset and 2FA-registration links are written here instead of emailed:
+# docker compose exec authelia cat /data/notifications.txt
+notifier:
+  filesystem:
+    filename: /data/notifications.txt
+
+totp:
+  issuer: '{{ env "SHORT_DOMAIN" }}'
