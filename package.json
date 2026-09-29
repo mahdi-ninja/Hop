@@ -1,6 +1,6 @@
 {
   "name": "hop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-hosted URL shortener for teams on Cloudflare Workers or Docker, with analytics, smart routing and sign-in handled in front of it.",
   "license": "MIT",
   "homepage": "https://github.com/mahdi-ninja/hop#readme",
